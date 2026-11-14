@@ -3,6 +3,11 @@
 .tabs a[aria-current] { color: var(--accent); }
 .tabs a span { display: grid; place-items: center; width: 24px; height: 24px; }
 .icon-button { background: transparent; border: 0; padding: 0; display: grid; place-items: center; }
+.notifications { position: relative; z-index: 2; }
+.notification-trigger { width: 40px; height: 40px; margin-right: -8px; }
+.notification-popover { position: absolute; top: calc(100% + 4px); right: 0; width: 220px; max-width: calc(100vw - 32px); padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 8px 24px #2c1b0020; }
+.notification-popover h2 { font-size: 16px; }
+.notification-popover p { margin-top: 4px; color: var(--muted); font-size: 13px; }
 .profile { display: flex; align-items: center; gap: 12px; }
 .profile h2 { font-size: 18px; margin-bottom: 5px; }
 .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

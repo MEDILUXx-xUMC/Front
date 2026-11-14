@@ -165,6 +165,30 @@ function showNewMessage(): void {
   app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.focus({ preventScroll: true });
 }
 
+function setNotificationsOpen(trigger: HTMLButtonElement, open: boolean): void {
+  const panel = document.getElementById("notification-popover");
+  if (!panel) return;
+  panel.hidden = !open;
+  trigger.setAttribute("aria-expanded", String(open));
+}
+
+document.addEventListener("click", (event) => {
+  const trigger = app.querySelector<HTMLButtonElement>(".notification-trigger");
+  const target = event.target;
+  if (!trigger || !(target instanceof Element)) return;
+  const open = trigger.getAttribute("aria-expanded") === "true";
+  if (trigger.contains(target)) setNotificationsOpen(trigger, !open);
+  else if (open && !target.closest(".notifications")) setNotificationsOpen(trigger, false);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const trigger = app.querySelector<HTMLButtonElement>('.notification-trigger[aria-expanded="true"]');
+  if (!trigger) return;
+  setNotificationsOpen(trigger, false);
+  trigger.focus();
+});
+
 app.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && communityDemo.modal) {
     communityDemo.modal = "";
