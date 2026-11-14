@@ -1,5 +1,7 @@
 import "../styles/tokens.css";
 import "./prototype.css";
+import "./community.css";
+import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
 
@@ -17,17 +19,23 @@ function hasTradeFrame(value: string): value is TradeFrame {
 }
 
 function render(): void {
+  const previous = frame;
   frame = location.hash.slice(1).toLowerCase() || "t1";
-  const index = Object.entries(tradeFrames).map(([key, title]) =>
+  if (previous !== frame) communityDemo.modal = "";
+  const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
+  const index = Object.entries({ ...tradeFrames, ...communityFrames }).map(([key, title]) =>
     `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
   ).join("");
-  const page = hasTradeFrame(frame) ? tradeScreens[frame]() : screen("화면 목록", `<div class="frame-list">${index}</div>`);
+  const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
+  const page = hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
   app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
-  if (frame === "t2" || frame === "t8") {
-    const dialog = app.querySelector<HTMLElement>("[role=dialog]");
-    app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .frame-shortcut").forEach((element) => { element.inert = true; });
-    dialog?.setAttribute("tabindex", "-1");
-    dialog?.focus();
+  const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
+  if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
+  const dialog = app.querySelector<HTMLElement>("[role=dialog]");
+  if (dialog) {
+    app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .frame-shortcut, .chat-footer, .tabs").forEach((element) => { element.inert = true; });
+    dialog.setAttribute("tabindex", "-1");
+    dialog.focus();
   }
 }
 
@@ -61,6 +69,21 @@ app.addEventListener("click", (event) => {
   if (element?.dataset.action) actions[element.dataset.action]?.();
   const frameLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href="#t2"]');
   if (frameLink) tradeDemo.saleQuote = false;
+  const control = (event.target as HTMLElement).closest<HTMLElement>("[data-community]");
+  if (!control) return;
+  const value = control.dataset.value ?? "";
+  switch (control.dataset.community) {
+    case "trade-filter": communityDemo.tradeFilter = value; break;
+    case "chat-filter": communityDemo.chatFilter = value; break;
+    case "room":
+      communityDemo.roomIndex = Number(value);
+      communityDemo.read.add(communityDemo.roomIndex);
+      return;
+    case "modal": communityDemo.modal = value; break;
+    case "close": communityDemo.modal = ""; break;
+    default: return;
+  }
+  render();
 });
 
 app.addEventListener("input", (event) => {
@@ -86,6 +109,12 @@ app.addEventListener("change", (event) => {
     if (submit) submit.disabled = !values.every(Boolean);
   }
   const file = input.files?.[0];
+  if (input.hasAttribute("data-chat-photo") && file) {
+    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요."); return; }
+    appendMessage({ text: "첨부한 사진", photo: URL.createObjectURL(file) });
+    showNewMessage();
+    return;
+  }
   if (input.dataset.photo && file) {
     if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요."); return; }
     const previous = tradeDemo.photos.get(input.dataset.photo);
@@ -97,14 +126,45 @@ app.addEventListener("change", (event) => {
 
 app.addEventListener("submit", (event) => {
   const form = event.target;
-  if (!(form instanceof HTMLFormElement) || form.id !== "listing") return;
+  if (!(form instanceof HTMLFormElement)) return;
+  if (form.id === "chat-form") {
+    event.preventDefault();
+    const message = new FormData(form).get("message");
+    if (typeof message !== "string" || !message.trim()) return;
+    appendMessage({ text: message.trim() });
+    form.reset();
+    showNewMessage();
+    return;
+  }
+  if (form.id === "schedule-form") {
+    event.preventDefault();
+    const date = new FormData(form).get("date");
+    if (typeof date !== "string" || !date) return;
+    communityDemo.returnDate = date;
+    communityDemo.modal = "";
+    appendMessage({ text: `반납 예정일 ${date}` });
+    showNewMessage();
+    return;
+  }
+  if (form.id !== "listing") return;
   event.preventDefault();
   if (frame === "t7" && !tradeDemo.itemChecks.every(Boolean)) return;
   const title = new FormData(form).get("title");
   notify(`${typeof title === "string" && title.trim() ? title.trim() : "제품"} 등록을 확인했어요. (프로토타입)`);
 });
 
+function showNewMessage(): void {
+  render();
+  app.querySelector(".messages .message:last-child")?.scrollIntoView({ block: "nearest" });
+  app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.focus({ preventScroll: true });
+}
+
 app.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && communityDemo.modal) {
+    communityDemo.modal = "";
+    render();
+    return;
+  }
   if (event.key === "Escape" && frame === "t2") navigate(tradeDemo.saleQuote ? "t1" : "frames");
   if (event.key === "Escape" && frame === "t8") navigate("t7");
 });
