@@ -2,14 +2,16 @@ import "../styles/tokens.css";
 import "./prototype.css";
 import "./community.css";
 import "./loading.css";
+import "./transitions.css";
+import { submitPrototypeRequest } from "../api/mocks/prototype";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { loadingScreen } from "./loading";
+import { cancelRequest, notify, runRequest } from "./request-feedback";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 let frame = "";
-let feedbackTimer: ReturnType<typeof setTimeout>;
 let loadingTimer: ReturnType<typeof setTimeout>;
 let routeFeedback = "";
 const frames: Readonly<Record<string, string>> = { ...tradeFrames, ...communityFrames };
@@ -34,7 +36,7 @@ function render(): void {
   ).join("");
   const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
   const page = hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
-  app.innerHTML = `<div class="prototype">${page}</div>${frameShortcut}<div id="feedback" role="status"></div>`;
+  app.innerHTML = `<div class="prototype ${previous !== frame ? "screen-enter" : ""}">${page}</div>${frameShortcut}`;
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
   const dialog = app.querySelector<HTMLElement>("[role=dialog]");
@@ -57,30 +59,37 @@ function renderRoute(): void {
     render();
     return;
   }
-  app.innerHTML = `<div class="prototype">${loadingScreen(target, title)}</div>${frameShortcut}<div id="feedback" role="status"></div>`;
+  app.innerHTML = `<div class="prototype">${loadingScreen(target, title)}</div>${frameShortcut}`;
   if (mode !== "loading") loadingTimer = setTimeout(render, 250);
 }
 
-function notify(message: string): void {
-  const status = document.querySelector<HTMLElement>("#feedback")!;
-  status.textContent = message;
-  clearTimeout(feedbackTimer);
-  feedbackTimer = setTimeout(() => { status.textContent = ""; }, 3500);
+function submitRequest(label: string, onSuccess: () => void): void {
+  void runRequest(label, submitPrototypeRequest, onSuccess);
+}
+
+function updateTrade(label: string, stage: string, success: () => void): void {
+  submitRequest(label, () => {
+    tradeDemo.stage = stage;
+    success();
+  });
 }
 
 const actions: Record<string, () => void> = {
-  "sale-quote": () => { tradeDemo.saleQuote = true; tradeDemo.requestChecks = [true, true]; navigate("t2"); },
-  "send-request": () => {
-    tradeDemo.stage = "REQUESTED";
+  "sale-quote": () => submitRequest("결제 정보를 불러오는 중이에요.", () => {
+    tradeDemo.saleQuote = true;
+    tradeDemo.requestChecks = [true, true];
+    navigate("t2");
+  }),
+  "send-request": () => updateTrade("요청을 보내는 중이에요.", "REQUESTED", () => {
     routeFeedback = "요청을 보냈어요. (프로토타입)";
     navigate(tradeDemo.saleQuote ? "t1" : "t3");
     tradeDemo.saleQuote = false;
-  },
-  accept: () => { tradeDemo.stage = "ACCEPTED"; navigate("t4"); },
-  reject: () => { tradeDemo.stage = "REJECTED"; notify("요청을 거절했어요."); },
-  ready: () => { tradeDemo.stage = "READY_FOR_PICKUP"; notify("걸어 둔 사진을 등록했어요."); },
-  complete: () => { tradeDemo.stage = "COMPLETED"; notify("반납 확인을 완료했어요."); },
-  dispute: () => { tradeDemo.stage = "DISPUTED"; notify("파손·분실 신고를 표시했어요. (프로토타입)"); },
+  }),
+  accept: () => updateTrade("요청을 수락하는 중이에요.", "ACCEPTED", () => navigate("t4")),
+  reject: () => updateTrade("요청을 거절하는 중이에요.", "REJECTED", () => notify("요청을 거절했어요.")),
+  ready: () => updateTrade("걸어 둔 사진을 등록하는 중이에요.", "READY_FOR_PICKUP", () => notify("걸어 둔 사진을 등록했어요.")),
+  complete: () => updateTrade("반납을 확인하는 중이에요.", "COMPLETED", () => notify("반납 확인을 완료했어요.")),
+  dispute: () => updateTrade("신고를 접수하는 중이에요.", "DISPUTED", () => notify("파손·분실 신고를 표시했어요. (프로토타입)")),
   "policy-from-form": () => { tradeDemo.policyBack = "t7"; navigate("t9"); },
   "policy-from-block": () => { tradeDemo.policyBack = "t8"; navigate("t9"); },
   "sealed-category": () => { tradeDemo.forms.t7.category = "샴푸"; navigate("t7"); },
@@ -138,13 +147,16 @@ app.addEventListener("change", (event) => {
   }
   const file = input.files?.[0];
   if (input.hasAttribute("data-chat-photo") && file) {
-    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요."); return; }
-    appendMessage({ text: "첨부한 사진", photo: URL.createObjectURL(file) });
-    showNewMessage();
+    input.value = "";
+    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요.", "error"); return; }
+    submitRequest("사진을 보내는 중이에요.", () => {
+      appendMessage({ text: "첨부한 사진", photo: URL.createObjectURL(file) });
+      showNewMessage();
+    });
     return;
   }
   if (input.dataset.photo && file) {
-    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요."); return; }
+    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요.", "error"); return; }
     const previous = tradeDemo.photos.get(input.dataset.photo);
     if (previous) URL.revokeObjectURL(previous);
     tradeDemo.photos.set(input.dataset.photo, URL.createObjectURL(file));
@@ -158,28 +170,47 @@ app.addEventListener("submit", (event) => {
   if (form.id === "chat-form") {
     event.preventDefault();
     const message = new FormData(form).get("message");
-    if (typeof message !== "string" || !message.trim()) return;
-    appendMessage({ text: message.trim() });
-    form.reset();
-    showNewMessage();
+    if (typeof message !== "string" || !message.trim()) {
+      notify("메시지를 입력해 주세요.", "error");
+      return;
+    }
+    submitRequest("메시지를 보내는 중이에요.", () => {
+      appendMessage({ text: message.trim() });
+      form.reset();
+      showNewMessage();
+    });
     return;
   }
   if (form.id === "schedule-form") {
     event.preventDefault();
     const date = new FormData(form).get("date");
     if (typeof date !== "string" || !date) return;
-    communityDemo.returnDate = date;
-    communityDemo.modal = "";
-    appendMessage({ text: `반납 예정일 ${date}` });
-    showNewMessage();
+    submitRequest("반납 일정을 저장하는 중이에요.", () => {
+      communityDemo.returnDate = date;
+      communityDemo.modal = "";
+      appendMessage({ text: `반납 예정일 ${date}` });
+      showNewMessage();
+    });
     return;
   }
   if (form.id !== "listing") return;
   event.preventDefault();
   if (frame === "t7" && !tradeDemo.itemChecks.every(Boolean)) return;
   const title = new FormData(form).get("title");
-  notify(`${typeof title === "string" && title.trim() ? title.trim() : "제품"} 등록을 확인했어요. (프로토타입)`);
+  if (typeof title !== "string" || !title.trim()) {
+    notify("제품 이름을 입력해 주세요.", "error");
+    return;
+  }
+  submitRequest("물건을 등록하는 중이에요.", () => notify(`${title.trim()} 등록을 확인했어요. (프로토타입)`));
 });
+
+app.addEventListener("invalid", (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
+  event.preventDefault();
+  notify(input.validationMessage, "error");
+  input.focus();
+}, true);
 
 function showNewMessage(): void {
   render();
@@ -223,6 +254,7 @@ app.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("hashchange", () => {
+  cancelRequest();
   renderRoute();
   window.scrollTo(0, 0);
 });

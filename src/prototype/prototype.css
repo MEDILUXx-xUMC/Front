@@ -113,4 +113,3 @@ label.photo-slot { cursor: pointer; }
 .frame-list-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
 .frame-list a { display: flex; align-items: center; gap: 12px; background: var(--panel); padding: 10px 14px; border-radius: 10px; }
 .frame-list b { color: var(--accent); width: 26px; }
-#feedback:not(:empty) { position: fixed; z-index: 5; bottom: 20px; left: 50%; translate: -50%; width: max-content; max-width: calc(100vw - 30px); padding: 9px 16px; border-radius: 12px; background: #2c1b00; color: white; text-align: center; }
