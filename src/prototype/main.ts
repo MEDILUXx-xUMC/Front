@@ -3,8 +3,10 @@ import "./prototype.css";
 import "./community.css";
 import "./budget.css";
 import "./core.css";
+import "./onboarding.css";
 import { budgetDemo, budgetFrames, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
 import { coreDemo, coreFrames, coreScreens, type CoreFrame } from "./core";
+import { onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
@@ -26,16 +28,21 @@ function hasCoreFrame(value: string): value is CoreFrame {
   return Object.hasOwn(coreScreens, value);
 }
 
+function hasOnboardingFrame(value: string): value is OnboardingFrame {
+  return Object.hasOwn(onboardingScreens, value);
+}
+
 function render(): void {
   const previous = frame;
   frame = location.hash.slice(1).toLowerCase() || "t1";
   if (previous !== frame) communityDemo.modal = "";
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
-  const index = Object.entries({ ...budgetFrames, ...coreFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
+  const index = Object.entries({ ...onboardingFrames, ...budgetFrames, ...coreFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
     `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
   ).join("");
   const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
-  const page = frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
+  const page = hasOnboardingFrame(frame) ? onboardingScreens[frame]()
+    : frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
     : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
   app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
