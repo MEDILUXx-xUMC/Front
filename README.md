@@ -37,6 +37,8 @@ npm run build      # 타입 검사 + 프로토타입 빌드
 
 권장 시연: `O1 → O10 → 01 → 02 → 03 → 04 → 05 → 06`. `01`에서 예산을 선택하면 `02`의 로딩 스켈레톤이 잠시 보입니다. 요청·인증·반납은 Mock 로딩 모달을 거쳐 다음 화면으로 이동합니다. `04`에서 가져간 사진, `05`에서 반납 사진을 선택해야 다음 단계로 진행할 수 있습니다. `06`의 **후기 남기기**를 누르면 작성 창이 열립니다.
 
+T·M·C 화면은 이동할 때 programingA의 화면별 로딩 스켈레톤을 표시합니다. 화면 목록의 **로딩** 링크 또는 `/#t4/loading`에서 고정된 로딩 상태를 볼 수 있습니다. 거래·등록·채팅의 Mock 요청은 공통 로딩 모달과 오류 토스트를 사용합니다. `/?api=error#c2`처럼 해시 앞에 `?api=error`를 넣으면 실패를 재현할 수 있습니다. 정상 시연으로 돌아갈 때는 쿼리를 제거합니다.
+
 사진은 브라우저에서 미리보기만 만들며 새로고침하면 사라집니다. 카드 번호와 로그인은 시연용 표시이고 입력한 정보를 서버에 전송하지 않습니다. 오류 상황은 토스트로 안내합니다.
 
 ## 코드 위치
@@ -44,6 +46,7 @@ npm run build      # 타입 검사 + 프로토타입 빌드
 | 경로 | 내용 |
 | --- | --- |
 | `src/prototype/main.ts` | 해시 라우팅, 화면 전환, 상품 API 호출, Mock 상호작용 |
+| `src/prototype/loading.ts`, `request-feedback.ts` | programingA 기준 화면별 스켈레톤·공통 요청 로딩·토스트 |
 | `src/api/products.ts`, `src/api/mocks/products.ts` | 상품 API 계약 및 같은 형식의 Mock |
 | `src/prototype/onboarding.ts`, `onboarding.css` | 온보딩 O1–O10 |
 | `src/prototype/budget.ts`, `budget.css` | 예산 선택 01 |

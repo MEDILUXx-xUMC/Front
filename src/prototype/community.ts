@@ -24,6 +24,7 @@ export const communityDemo = {
   messages: new Map<number, Message[]>(),
   modal: "",
   returnDate: "",
+  selectedCategory: "",
 };
 
 export function appendMessage(message: Message): void {
@@ -60,7 +61,6 @@ function dialog(title: string, content: string): string {
 
 function profileDialog(): string {
   switch (communityDemo.modal) {
-    case "notifications": return dialog("알림", "<p>새 알림이 없어요.</p>");
     case "card": return dialog("결제수단", rows([["등록한 카드", "•••• 5678"]], "panel"));
     case "account": return dialog("정산 계좌", "<p>등록된 정산 계좌가 없어요.</p>");
     case "rules": return dialog("문고리 거래 수칙", "<p>수락된 거래의 상대에게만 주소가 공개돼요. 물건을 걸어 둔 뒤 상태 사진을 남겨 주세요.</p>");
@@ -109,7 +109,12 @@ export const communityScreens: Record<CommunityFrame, () => string> = {
       ${profileRow("문고리 거래 수칙", "", "rules")}
       ${profileRow("고객센터", "", "support")}
     </div>${profileDialog()}
-  `, { footer: tabs("m1"), headerAction: `<button class="header-action icon-button" type="button" data-community="modal" data-value="notifications" aria-label="알림">${icon("m1-imgNotification")}</button>` }),
+  `, { footer: tabs("m1"), headerAction: `<div class="header-action notifications">
+      <button class="icon-button notification-trigger" type="button" aria-label="알림" aria-expanded="false" aria-controls="notification-popover">${icon("m1-imgNotification")}</button>
+      <section class="notification-popover" id="notification-popover" aria-labelledby="notification-title" hidden>
+        <h2 id="notification-title">알림</h2><p>새 알림이 없어요.</p>
+      </section>
+    </div>` }),
   m2: () => {
     const stage = tradeDemo.stage;
     const lent = communityDemo.tradeFilter === "lent";
@@ -130,7 +135,7 @@ export const communityScreens: Record<CommunityFrame, () => string> = {
   },
   m3: () => screen("처음 써 본 것", `
     <div class="intro"><h2>지금까지 3종류를 처음 써 봤어요</h2><p>빈 칸은 아직 안 써 본 종류예요.<br>이웃 제품으로 채워 보세요.</p></div>
-    <ul class="experience-grid">${categories.map((label, i) => `<li class="${i < 3 ? "experienced" : ""}">${i < 3 ? icon("m3-imgGroup1") : ""}${label}</li>`).join("")}</ul>
+    <ul class="experience-grid">${categories.map((label) => `<li><button type="button" data-community="experience" data-value="${label}" aria-pressed="${communityDemo.selectedCategory === label}">${icon("m3-imgGroup1")}${label}</button></li>`).join("")}</ul>
   `, { frame: "m3", back: "m1", footer: footer(link("안 써 본 것 둘러보기", "t1")) }),
   c1: () => screen("채팅", `
     ${filters([["all", "전체"], ["borrowed", "빌린 거래"], ["lent", "빌려준 거래"]], communityDemo.chatFilter, "chat-filter")}
