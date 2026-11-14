@@ -1,6 +1,8 @@
 import "../styles/tokens.css";
 import "./prototype.css";
 import "./community.css";
+import "./budget.css";
+import { budgetDemo, budgetFrames, budgetNextScreen, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
@@ -23,11 +25,12 @@ function render(): void {
   frame = location.hash.slice(1).toLowerCase() || "t1";
   if (previous !== frame) communityDemo.modal = "";
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
-  const index = Object.entries({ ...tradeFrames, ...communityFrames }).map(([key, title]) =>
+  const index = Object.entries({ ...budgetFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
     `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
   ).join("");
   const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
-  const page = hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
+  const page = frame === "01" ? budgetScreen() : frame === "02" ? budgetNextScreen()
+    : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
   app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
@@ -47,6 +50,18 @@ function notify(message: string): void {
 }
 
 const actions: Record<string, () => void> = {
+  "budget-custom": () => {
+    budgetDemo.custom = true;
+    render();
+    app.querySelector<HTMLInputElement>("#budget-custom-input")?.focus();
+  },
+  "budget-continue": () => {
+    if (!Number.isFinite(budgetDemo.amount) || budgetDemo.amount < 10_000 || budgetDemo.amount > 1_000_000) {
+      notify("예산을 1만 원부터 100만 원까지 입력해 주세요.");
+      return;
+    }
+    navigate("02");
+  },
   "sale-quote": () => { tradeDemo.saleQuote = true; tradeDemo.requestChecks = [true, true]; navigate("t2"); },
   "send-request": () => {
     tradeDemo.stage = "REQUESTED";
@@ -67,6 +82,16 @@ const actions: Record<string, () => void> = {
 app.addEventListener("click", (event) => {
   const element = (event.target as HTMLElement).closest<HTMLElement>("[data-action]");
   if (element?.dataset.action) actions[element.dataset.action]?.();
+  const budgetPreset = (event.target as HTMLElement).closest<HTMLElement>("[data-budget]");
+  if (budgetPreset?.dataset.budget) {
+    const amount = Number(budgetPreset.dataset.budget);
+    if (budgetPresets.some((preset) => preset === amount)) {
+      budgetDemo.amount = amount;
+      budgetDemo.custom = false;
+      render();
+    }
+    return;
+  }
   const frameLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href="#t2"]');
   if (frameLink) tradeDemo.saleQuote = false;
   const control = (event.target as HTMLElement).closest<HTMLElement>("[data-community]");
@@ -89,6 +114,20 @@ app.addEventListener("click", (event) => {
 app.addEventListener("input", (event) => {
   const input = event.target;
   if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement)) return;
+  if (input instanceof HTMLInputElement && (input.id === "budget-range" || input.id === "budget-custom-input")) {
+    budgetDemo.amount = input.id === "budget-range"
+      ? budgetRangeValues[Number(input.value)] ?? budgetRangeValues[0]
+      : Number(input.value);
+    if (input.id === "budget-range") budgetDemo.custom = false;
+    const display = app.querySelector<HTMLElement>("#budget-amount");
+    if (display) display.textContent = formatBudget(budgetDemo.amount);
+    if (input.id === "budget-range") {
+      const progress = Number(input.value) / (budgetRangeValues.length - 1) * 100;
+      input.style.setProperty("--budget-progress", `${progress}%`);
+      input.setAttribute("aria-valuetext", formatBudget(budgetDemo.amount));
+    }
+    return;
+  }
   const form = input.form?.dataset.form;
   if (form !== "t6" && form !== "t7") return;
   const fields = tradeDemo.forms[form] as Record<string, string>;
@@ -97,6 +136,10 @@ app.addEventListener("input", (event) => {
 
 app.addEventListener("change", (event) => {
   const input = event.target;
+  if (input instanceof HTMLInputElement && (input.id === "budget-range" || input.id === "budget-custom-input")) {
+    render();
+    return;
+  }
   if (input instanceof HTMLSelectElement && input.value === "샴푸 (덜어서 팔기)") {
     navigate("t8");
     return;
