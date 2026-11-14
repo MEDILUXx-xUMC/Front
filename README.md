@@ -1,6 +1,17 @@
 # Front
 This is front-end repository
 
+## Figma 프로토타입
+
+```sh
+npm ci
+npm run dev
+```
+
+Vite가 표시한 주소에서 기본 화면을 열거나 `/#frames`에서 Figma 프레임을 선택한다. 거래 T1–T9에서 요청 확인, 수락, 사진 선택, 반납 확인, 물건 등록과 품목 안내를 확인할 수 있다. 결제와 거래 동작은 프로토타입 상태에서만 처리된다. 사진 미리보기와 입력값은 탭을 새로고침하면 초기화된다.
+
+`npm run build`로 타입 검사와 배포용 빌드를 실행한다.
+
 ## 프로젝트 초기 구조
 
 [폴더 구조와 작업 순서](docs/PROJECT_SETUP.md)에 공통 코드 사용법과 Figma 기준을 정리했다. FE와 BE가 함께 보는 API 계약은 Back 저장소의 `docs/API_CONTRACT.md`에서 관리한다.
