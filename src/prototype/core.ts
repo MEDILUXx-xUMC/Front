@@ -40,6 +40,8 @@ function productList(): string {
   const samples = [
     ["섬유유연제 코튼 향 1회분", "1,500원"],
     ["허브 샴푸 여행용 1회분", "1,200원"],
+    ["세탁세제 1회분", "1,000원"],
+    ["핸드워시 1회분", "1,200원"],
   ].map(([title, price]) => `<div class="core-product core-sample">
     ${placeholder("사진", "core-thumb")}
     <span>${tag("미개봉", "neutral")}<strong>${title}</strong><small>이웃이 쓰는 생활용품</small><b>${price}</b></span>

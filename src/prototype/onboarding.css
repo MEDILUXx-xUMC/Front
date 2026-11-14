@@ -71,7 +71,8 @@
 .onboarding-range button.selected { background: #2c1b00; color: white; }
 .onboarding-card { background: #2c1b00; min-height: 170px; align-content: end; font-size: 12px; }
 .onboarding-card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.onboarding-card-fields .onboarding-field { margin-top: 0; }
+.onboarding-card-fields .onboarding-field { margin-top: 0; min-width: 0; }
+.onboarding-card-fields .onboarding-field input { width: 100%; min-width: 0; }
 .onboarding-policy-links { display: grid; gap: 8px; font-size: 12px; }
 .onboarding-policy-links > div { display: flex; align-items: center; gap: 7px; }
 .onboarding-policy-links > div > span { width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 4px; color: transparent; text-align: center; }
