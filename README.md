@@ -1,6 +1,10 @@
 # Front
 This is front-end repository
 
+## 프로젝트 초기 구조
+
+[폴더 구조와 작업 순서](docs/PROJECT_SETUP.md)에 공통 코드 사용법과 Figma 기준을 정리했다. FE와 BE가 함께 보는 API 계약은 Back 저장소의 `docs/API_CONTRACT.md`에서 관리한다.
+
 ## FE 협업 규칙
 
 ### 1. 첫 작업과 담당 범위
