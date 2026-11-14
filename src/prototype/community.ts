@@ -36,7 +36,7 @@ const categories = ["섬유유연제", "샴푸", "기계식 키보드", "바디�
 
 function tabs(frame: "m1" | "m2"): string {
   const labels = ["홈", "내 거래", "채팅", "내 물건", "마이"];
-  const targets = ["frames", "m2", "c1", "t6", "m1"];
+  const targets = ["02", "m2", "c1", "t6", "m1"];
   const assets = frame === "m1" ? ["imgGroup1", "imgGroup2", "imgIcon", "imgGroup3", "imgGroup4"] : ["imgGroup", "imgGroup1", "imgIcon", "imgGroup2", "imgGroup3"];
   return `<nav class="tabs" aria-label="주 메뉴">${labels.map((label, i) => `<a href="#${targets[i]}" ${targets[i] === frame ? 'aria-current="page"' : ""}><span>${icon(`${frame}-${assets[i]}`)}</span>${label}</a>`).join("")}</nav>`;
 }

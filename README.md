@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Vite가 출력한 로컬 주소를 엽니다. 기본 포트는 `5173`이며, 모든 화면은 `http://127.0.0.1:5173/#frames`에서 선택할 수 있습니다. 이미 5173 포트를 사용 중이면 터미널에 출력된 주소를 사용하세요.
+Vite가 출력한 로컬 주소를 열면 서비스 소개에서 시작합니다. 기본 포트는 `5173`입니다.
 
 ```sh
 npm run typecheck  # TypeScript 검사
@@ -22,9 +22,9 @@ npm run build      # 타입 검사 + 프로토타입 빌드
 
 ### 로컬 백엔드 연결
 
-백엔드의 `feat/catalog-foundation`(PR #2)을 로컬 프로필로 실행한 뒤 `.env.example`을 `.env.local`로 복사하고 `npm run dev`를 재시작합니다. `VITE_API_BASE_URL=http://127.0.0.1:8080/api/v1`이 설정되면 01 예산 선택에서 `GET /products?budgetAmount=...&rentalDays=...`, 02 제품 선택에서 `GET /products/{productId}`를 호출합니다. 응답 대기에는 스켈레톤과 로딩 모달을 표시하고, 빈 결과와 오류는 화면에 표시합니다. 서버 오류 시 Mock으로 자동 전환하지 않습니다. 환경변수가 없으면 Figma 예시 제품 5개를 담은 Mock API를 사용합니다.
+백엔드 `main`을 로컬 프로필로 실행한 뒤 `.env.example`을 `.env.local`로 복사하고 `npm run dev`를 재시작합니다. `VITE_API_BASE_URL=http://127.0.0.1:8080/api/v1`이 설정되면 01 예산 선택에서 `GET /products?budgetAmount=...&rentalDays=...`, 02 제품 선택에서 `GET /products/{productId}`를 호출합니다. 응답 대기에는 스켈레톤과 로딩 모달을 표시하고, 빈 결과와 오류는 화면에 표시합니다. 환경변수가 없으면 Figma 예시 제품 5개를 담은 Mock API를 사용합니다.
 
-백엔드의 그 외 경로는 아직 구현되지 않았으므로 O·T·M·C 화면과 03 이후 거래 전환은 Mock 상태입니다. 실제 연동 범위와 계약은 백엔드 [상품 API PR](https://github.com/MEDILUXx-xUMC/Back/pull/2) 및 `docs/API_CONTRACT.md`를 확인하세요.
+Front에서 상품 목록·상세 외의 기능은 Mock으로 동작합니다. 백엔드 요청·응답 형식은 [API 계약](https://github.com/MEDILUXx-xUMC/Back/blob/main/docs/API_CONTRACT.md)을 참고하세요.
 
 ## 화면과 시연 순서
 
@@ -37,7 +37,7 @@ npm run build      # 타입 검사 + 프로토타입 빌드
 
 권장 시연: `O1 → O10 → 01 → 02 → 03 → 04 → 05 → 06`. `01`에서 예산을 선택하면 `02`의 로딩 스켈레톤이 잠시 보입니다. 요청·인증·반납은 Mock 로딩 모달을 거쳐 다음 화면으로 이동합니다. `04`에서 가져간 사진, `05`에서 반납 사진을 선택해야 다음 단계로 진행할 수 있습니다. `06`의 **후기 남기기**를 누르면 작성 창이 열립니다.
 
-T·M·C 화면은 이동할 때 programingA의 화면별 로딩 스켈레톤을 표시합니다. 화면 목록의 **로딩** 링크 또는 `/#t4/loading`에서 고정된 로딩 상태를 볼 수 있습니다. 거래·등록·채팅의 Mock 요청은 공통 로딩 모달과 오류 토스트를 사용합니다. `/?api=error#c2`처럼 해시 앞에 `?api=error`를 넣으면 실패를 재현할 수 있습니다. 정상 시연으로 돌아갈 때는 쿼리를 제거합니다.
+T·M·C 화면을 이동할 때 화면별 로딩 스켈레톤을 표시합니다. 거래·등록·채팅 요청은 공통 로딩 모달과 오류 토스트를 사용합니다.
 
 사진은 브라우저에서 미리보기만 만들며 새로고침하면 사라집니다. 카드 번호와 로그인은 시연용 표시이고 입력한 정보를 서버에 전송하지 않습니다. 오류 상황은 토스트로 안내합니다.
 

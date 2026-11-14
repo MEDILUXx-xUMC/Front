@@ -7,17 +7,17 @@ import "./onboarding.css";
 import "./loading.css";
 import "./transitions.css";
 import { submitPrototypeRequest } from "../api/mocks/prototype";
-import { budgetDemo, budgetFrames, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
-import { coreDemo, coreFrames, coreScreens, setCoreProduct, type CoreFrame } from "./core";
+import { budgetDemo, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
+import { coreDemo, coreScreens, setCoreProduct } from "./core";
 import { createApiClient } from "../api/client";
 import { createProductsApi } from "../api/products";
 import { mockProductsApi } from "../api/mocks/products";
-import { bindOnboarding, mountOnboarding, onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
+import { bindOnboarding, mountOnboarding, onboardingScreens } from "./onboarding";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { loadingScreen } from "./loading";
 import { cancelRequest, notify, runRequest } from "./request-feedback";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
-import { escapeHtml, screen } from "./ui";
+import { escapeHtml } from "./ui";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 let frame = "";
@@ -27,49 +27,36 @@ const productsApi = apiBase ? createProductsApi(createApiClient(apiBase)) : mock
 let listRequest = 0;
 let loadingTimer: ReturnType<typeof setTimeout>;
 let routeFeedback = "";
-const frames: Readonly<Record<string, string>> = { ...onboardingFrames, ...budgetFrames, ...coreFrames, ...tradeFrames, ...communityFrames };
-const frameShortcut = '<a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a>';
+const screens: Readonly<Record<string, () => string>> = {
+  ...onboardingScreens, "01": budgetScreen, ...coreScreens, ...tradeScreens, ...communityScreens,
+};
+
+function currentRoute(): string {
+  const target = location.hash.slice(1).toLowerCase();
+  return Object.hasOwn(screens, target) ? target : "o1";
+}
 
 function navigate(target: string): void {
   if (location.hash === `#${target}`) render();
   else location.hash = target;
 }
 
-function hasTradeFrame(value: string): value is TradeFrame {
-  return Object.hasOwn(tradeScreens, value);
-}
-
-function hasCoreFrame(value: string): value is CoreFrame {
-  return Object.hasOwn(coreScreens, value);
-}
-
-function hasOnboardingFrame(value: string): value is OnboardingFrame {
-  return Object.hasOwn(onboardingScreens, value);
-}
-
 function render(): void {
   cleanupOnboarding();
   const previous = frame;
-  frame = location.hash.slice(1).toLowerCase().split("/")[0] || "o1";
+  frame = currentRoute();
   if (previous !== frame) communityDemo.modal = "";
   if (previous !== frame && frame === "m3") communityDemo.selectedCategory = "";
   if (previous !== frame && frame !== "06") coreDemo.reviewOpen = false;
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
-  const index = Object.entries(frames).map(([key, title]) =>
-    `<div class="frame-list-row"><a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>${Object.hasOwn(tradeFrames, key) || Object.hasOwn(communityFrames, key) ? `<a href="#${key}/loading" aria-label="${title} 로딩 미리보기">로딩</a>` : ""}</div>`,
-  ).join("");
-  const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
-  const page = hasOnboardingFrame(frame) ? onboardingScreens[frame]()
-    : frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
-    : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
-  app.innerHTML = `<div class="prototype ${previous !== frame ? "screen-enter" : ""}">${page}</div>${frameShortcut}`;
+  const page = (screens[frame] ?? onboardingScreens.o1)();
+  app.innerHTML = `<div class="prototype ${previous !== frame ? "screen-enter" : ""}">${page}</div>`;
   cleanupOnboarding = mountOnboarding(app);
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
   const dialog = app.querySelector<HTMLElement>("[role=dialog]");
   if (dialog) {
-    app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .frame-shortcut, .chat-footer, .tabs, .core-screen .footer").forEach((element) => { element.inert = true; });
-    app.querySelector<HTMLElement>(".frame-shortcut")?.setAttribute("inert", "");
+    app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .chat-footer, .tabs, .core-screen .footer").forEach((element) => { element.inert = true; });
     dialog.setAttribute("tabindex", "-1");
     dialog.focus();
   }
@@ -78,13 +65,13 @@ function render(): void {
 
 function renderRoute(): void {
   clearTimeout(loadingTimer);
-  const [target = "o1", mode] = (location.hash.slice(1).toLowerCase() || "o1").split("/");
+  const target = currentRoute();
   const title = Object.hasOwn(tradeFrames, target) ? tradeFrames[target as TradeFrame]
     : Object.hasOwn(communityFrames, target) ? communityFrames[target as CommunityFrame] : undefined;
-  if (!title || (mode !== "loading" && target === frame)) { render(); return; }
+  if (!title || target === frame) { render(); return; }
   cleanupOnboarding();
-  app.innerHTML = `<div class="prototype">${loadingScreen(target, title)}</div>${frameShortcut}`;
-  if (mode !== "loading") loadingTimer = setTimeout(render, 250);
+  app.innerHTML = `<div class="prototype">${loadingScreen(target, title)}</div>`;
+  loadingTimer = setTimeout(render, 250);
 }
 
 function submitRequest(label: string, onSuccess: () => void): void {
@@ -383,7 +370,7 @@ app.addEventListener("keydown", (event) => {
     render();
     return;
   }
-  if (event.key === "Escape" && frame === "t2") navigate(tradeDemo.saleQuote ? "t1" : "frames");
+  if (event.key === "Escape" && frame === "t2") navigate(tradeDemo.saleQuote ? "t1" : "03");
   if (event.key === "Escape" && frame === "t8") navigate("t7");
 });
 

@@ -56,7 +56,7 @@ export const tradeScreens: Record<TradeFrame, () => string> = {
     <blockquote class="panel">"향이 은은하게 오래가요. 여행용 미니 정품을 뜯지 않은 채로 드려요."</blockquote>
     ${rows([["가격", "1,500원"], ["상태", "미개봉 정품 · 표시사항 인쇄"], ["받는 방법", "문고리 거래"]])}
     ${notice("생활용품은 뜯지 않은 정품만 거래할 수 있어요. 덜어 담은 제품, 견본품, 사용한 칫솔·면도기·수건은 거래할 수 없어요.", "t1-imgGroup1")}
-  `, { frame: "t1", back: "frames", footer: footer(button("1,500원에 써 보기", "sale-quote")) }),
+  `, { frame: "t1", back: "02", footer: footer(button("1,500원에 써 보기", "sale-quote")) }),
   t2: () => {
     const sale = tradeDemo.saleQuote;
     const confirm = sale ? ["미개봉 상품을 문고리에서 가져갈게요", "가져간 뒤 사진을 남길게요"] : ["문고리에서 가져간 뒤 사진을 남길게요", "11월 16일까지 다시 문고리에 걸어 둘게요"];
@@ -67,16 +67,16 @@ export const tradeScreens: Record<TradeFrame, () => string> = {
         ${rows([...quote, ["결제 카드", "등록한 카드 •••• 5678"]], "panel")}
         ${checks(confirm, tradeDemo.requestChecks, "t2-imgGroup1")}
         ${button("요청 보내기", "send-request", "primary", !tradeDemo.requestChecks.every(Boolean))}
-        ${link("취소", sale ? "t1" : "frames", "secondary")}
+        ${link("취소", sale ? "t1" : "03", "secondary")}
       `)}
-    `, { frame: "t2", back: sale ? "t1" : "frames" });
+    `, { frame: "t2", back: sale ? "t1" : "03" });
   },
   t3: () => screen("받은 요청", `
     ${card(keyboard, "요청 옴", "내가 올린 제품", "하루 2,000원")}
     <div class="intro"><h2>풍무동 이웃이 이틀 동안 써 보고 싶어 해요</h2><p>이웃에게는 처음 써 보는 종류의 제품이에요.</p></div>
     ${rows([["사용 기간", "11월 14일부터 2일"], ["반납 기한", "11월 16일 21:00"], ["받을 사용료", "4,000원"], ["이웃의 보증금", "45,000원 보류됨"]], "panel")}
     ${notice("수락하면 오늘 안에 문고리에 걸어 두고 사진을 남겨 주세요. 사용료에서 수수료를 뺀 금액이 정산돼요.", "t3-imgGroup1")}
-  `, { frame: "t3", back: "frames", footer: footer(button("수락하기", "accept") + button("거절하기", "reject", "secondary")) }),
+  `, { frame: "t3", back: "m2", footer: footer(button("수락하기", "accept") + button("거절하기", "reject", "secondary")) }),
   t4: () => screen("걸어 두기", `
     <div class="intro"><h2>문고리에 걸고 사진을 남겨 주세요</h2><p>제품 전체가 보이게 찍어 주세요. 반납 때 상태를 비교하는 기준이 돼요.</p></div>
     <div class="two">${photo("handoff", "걸어 둔 모습", "t4-imgGroup1")}${photo("condition", "제품 상태", "t4-imgGroup1")}</div>
@@ -102,7 +102,7 @@ export const tradeScreens: Record<TradeFrame, () => string> = {
       <a class="track" href="#t7">${icon("t6-imgRadio1")}<div>미개봉 생활용품<small>뜯지 않은 정품만 팔아요. 덜어서 팔 수 없어요.</small></div></a>
     </div>
     <form id="listing" data-form="t6">${field("제품 이름", "title", tradeDemo.forms.t6.title)}<div class="two">${field("정가 (보증금)", "depositAmount", tradeDemo.forms.t6.depositAmount, true)}${field("하루 사용료", "dailyFeeAmount", tradeDemo.forms.t6.dailyFeeAmount, true)}</div></form>
-  `, { frame: "t6", back: "frames", footer: footer('<button class="button primary" type="submit" form="listing">올리기</button>') }),
+  `, { frame: "t6", back: "02", footer: footer('<button class="button primary" type="submit" form="listing">올리기</button>') }),
   t7: () => screen("내 물건 올리기", `
     <div class="bar panel"><strong>미개봉 생활용품</strong><a class="accent" href="#t6">트랙 변경</a></div>
     <div class="two">${photo("sale-cover", "대표 사진", "t7-imgGroup1", true)}${photo("sale-label", "표시사항 사진", "t7-imgGroup1", true)}</div>
