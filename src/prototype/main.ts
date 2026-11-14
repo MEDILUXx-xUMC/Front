@@ -5,7 +5,7 @@ import "./budget.css";
 import "./core.css";
 import "./onboarding.css";
 import { budgetDemo, budgetFrames, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
-import { coreDemo, coreFrames, coreScreens, type CoreFrame } from "./core";
+import { coreDemo, coreFrames, coreLoadingModal, coreScreens, type CoreFrame } from "./core";
 import { onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
@@ -36,6 +36,7 @@ function render(): void {
   const previous = frame;
   frame = location.hash.slice(1).toLowerCase() || "t1";
   if (previous !== frame) communityDemo.modal = "";
+  if (previous !== frame && frame !== "06") coreDemo.reviewOpen = false;
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
   const index = Object.entries({ ...onboardingFrames, ...budgetFrames, ...coreFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
     `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
@@ -44,32 +45,73 @@ function render(): void {
   const page = hasOnboardingFrame(frame) ? onboardingScreens[frame]()
     : frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
     : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
-  app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
+  app.innerHTML = `<div class="prototype">${page}${coreDemo.pending ? coreLoadingModal() : ""}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
   const dialog = app.querySelector<HTMLElement>("[role=dialog]");
   if (dialog) {
-    app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .frame-shortcut, .chat-footer, .tabs").forEach((element) => { element.inert = true; });
+    if (coreDemo.pending) app.querySelector<HTMLElement>(".screen")?.setAttribute("inert", "");
+    else app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .frame-shortcut, .chat-footer, .tabs, .core-screen .footer").forEach((element) => { element.inert = true; });
+    app.querySelector<HTMLElement>(".frame-shortcut")?.setAttribute("inert", "");
     dialog.setAttribute("tabindex", "-1");
     dialog.focus();
   }
 }
 
-function notify(message: string): void {
+function notify(message: string, tone: "info" | "error" = "info"): void {
   const status = document.querySelector<HTMLElement>("#feedback")!;
   status.textContent = message;
+  status.dataset.tone = tone;
+  status.setAttribute("role", tone === "error" ? "alert" : "status");
   clearTimeout(feedbackTimer);
   feedbackTimer = setTimeout(() => { status.textContent = ""; }, 3500);
+}
+
+function runMockRequest(message: string, next: string, after: () => void = () => {}): void {
+  if (coreDemo.pending) return;
+  const sourceFrame = frame;
+  coreDemo.pending = message;
+  render();
+  window.setTimeout(() => {
+    coreDemo.pending = "";
+    if (frame !== sourceFrame) { render(); return; }
+    after();
+    navigate(next);
+  }, 700);
+}
+
+function loadCoreProducts(): void {
+  coreDemo.listLoading = true;
+  navigate("02");
+  window.setTimeout(() => {
+    coreDemo.listLoading = false;
+    if (frame === "02") render();
+  }, 700);
 }
 
 const actions: Record<string, () => void> = {
   "core-open-product": () => navigate("03"),
   "core-days-down": () => { coreDemo.rentalDays = Math.max(1, coreDemo.rentalDays - 1); render(); },
   "core-days-up": () => { coreDemo.rentalDays = Math.min(7, coreDemo.rentalDays + 1); render(); },
-  "core-request": () => navigate("04"),
-  "core-pickup": () => { coreDemo.received = true; navigate("05"); },
-  "core-return": () => { coreDemo.returned = true; navigate("06"); },
-  "core-review": () => notify("후기를 남겼어요. (프로토타입)"),
+  "core-request": () => runMockRequest("한번만 요청을 보내는 중이에요", "04"),
+  "core-pickup": () => {
+    if (!coreDemo.photos.has("pickup")) { notify("가져간 사진을 먼저 올려 주세요.", "error"); return; }
+    runMockRequest("수령 사진을 확인하는 중이에요", "05", () => { coreDemo.received = true; });
+  },
+  "core-return": () => {
+    if (!coreDemo.photos.has("return")) { notify("반납한 사진을 먼저 올려 주세요.", "error"); return; }
+    runMockRequest("반납을 확인하는 중이에요", "06", () => { coreDemo.returned = true; });
+  },
+  "core-review": () => { coreDemo.reviewOpen = true; render(); app.querySelector<HTMLTextAreaElement>("#core-review-text")?.focus(); },
+  "core-review-close": () => { coreDemo.reviewOpen = false; render(); },
+  "core-review-save": () => {
+    if (!coreDemo.reviewText.trim()) { notify("후기를 한 글자 이상 입력해 주세요.", "error"); return; }
+    coreDemo.reviewText = coreDemo.reviewText.trim();
+    coreDemo.reviewSubmitted = true;
+    coreDemo.reviewOpen = false;
+    render();
+    notify("후기를 저장했어요.");
+  },
   "budget-custom": () => {
     budgetDemo.custom = true;
     render();
@@ -77,10 +119,10 @@ const actions: Record<string, () => void> = {
   },
   "budget-continue": () => {
     if (!Number.isFinite(budgetDemo.amount) || budgetDemo.amount < 10_000 || budgetDemo.amount > 1_000_000) {
-      notify("예산을 1만 원부터 100만 원까지 입력해 주세요.");
+      notify("예산을 1만 원부터 100만 원까지 입력해 주세요.", "error");
       return;
     }
-    navigate("02");
+    loadCoreProducts();
   },
   "sale-quote": () => { tradeDemo.saleQuote = true; tradeDemo.requestChecks = [true, true]; navigate("t2"); },
   "send-request": () => {
@@ -100,8 +142,22 @@ const actions: Record<string, () => void> = {
 };
 
 app.addEventListener("click", (event) => {
+  const route = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+  const target = route?.getAttribute("href")?.slice(1);
+  const mockTransitions: Record<string, string> = {
+    "o4:o5": "로그인을 확인하는 중이에요",
+    "o6:o7": "동네를 설정하는 중이에요",
+    "o7:o8": "동네 인증을 확인하는 중이에요",
+    "o8-5:o9": "결제수단 등록을 확인하는 중이에요",
+  };
+  const mockMessage = target ? mockTransitions[`${frame}:${target}`] : undefined;
+  if (route && target && mockMessage) {
+    event.preventDefault();
+    runMockRequest(mockMessage, target);
+    return;
+  }
   const element = (event.target as HTMLElement).closest<HTMLElement>("[data-action]");
-  if (element?.dataset.action) actions[element.dataset.action]?.();
+  if (element?.dataset.action && (element.dataset.action !== "core-review-close" || element === event.target)) actions[element.dataset.action]?.();
   const budgetPreset = (event.target as HTMLElement).closest<HTMLElement>("[data-budget]");
   if (budgetPreset?.dataset.budget) {
     const amount = Number(budgetPreset.dataset.budget);
@@ -139,6 +195,10 @@ app.addEventListener("click", (event) => {
 
 app.addEventListener("input", (event) => {
   const input = event.target;
+  if (input instanceof HTMLTextAreaElement && input.id === "core-review-text") {
+    coreDemo.reviewText = input.value;
+    return;
+  }
   if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement)) return;
   if (input instanceof HTMLInputElement && (input.id === "budget-range" || input.id === "budget-custom-input")) {
     budgetDemo.amount = input.id === "budget-range"
@@ -171,6 +231,19 @@ app.addEventListener("change", (event) => {
     return;
   }
   if (!(input instanceof HTMLInputElement)) return;
+  if (input.dataset.corePhoto) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요.", "error"); return; }
+    if (file.size > 10 * 1024 * 1024) { notify("10MB 이하의 사진을 선택해 주세요.", "error"); return; }
+    const kind = input.dataset.corePhoto as "pickup" | "return" | "returnExtra";
+    const previous = coreDemo.photos.get(kind);
+    if (previous) URL.revokeObjectURL(previous);
+    coreDemo.photos.set(kind, URL.createObjectURL(file));
+    render();
+    notify("사진을 추가했어요.");
+    return;
+  }
   if (input.dataset.check !== undefined) {
     const values = frame === "t2" ? tradeDemo.requestChecks : tradeDemo.itemChecks;
     values[Number(input.dataset.check)] = input.checked;
@@ -229,6 +302,11 @@ function showNewMessage(): void {
 }
 
 app.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && coreDemo.reviewOpen) {
+    coreDemo.reviewOpen = false;
+    render();
+    return;
+  }
   if (event.key === "Escape" && communityDemo.modal) {
     communityDemo.modal = "";
     render();
