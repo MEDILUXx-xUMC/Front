@@ -135,7 +135,7 @@ export const communityScreens: Record<CommunityFrame, () => string> = {
   },
   m3: () => screen("처음 써 본 것", `
     <div class="intro"><h2>지금까지 3종류를 처음 써 봤어요</h2><p>빈 칸은 아직 안 써 본 종류예요.<br>이웃 제품으로 채워 보세요.</p></div>
-    <ul class="experience-grid">${categories.map((label, i) => `<li><button type="button" class="${i < 3 ? "experienced" : ""}" data-community="experience" data-value="${label}" aria-pressed="${communityDemo.selectedCategory === label}">${i < 3 ? icon("m3-imgGroup1") : ""}${label}</button></li>`).join("")}</ul>
+    <ul class="experience-grid">${categories.map((label) => `<li><button type="button" data-community="experience" data-value="${label}" aria-pressed="${communityDemo.selectedCategory === label}">${icon("m3-imgGroup1")}${label}</button></li>`).join("")}</ul>
   `, { frame: "m3", back: "m1", footer: footer(link("안 써 본 것 둘러보기", "t1")) }),
   c1: () => screen("채팅", `
     ${filters([["all", "전체"], ["borrowed", "빌린 거래"], ["lent", "빌려준 거래"]], communityDemo.chatFilter, "chat-filter")}

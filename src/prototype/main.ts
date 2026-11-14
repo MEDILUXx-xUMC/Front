@@ -30,6 +30,7 @@ function render(): void {
   const previous = frame;
   frame = location.hash.slice(1).toLowerCase().split("/")[0] || "t1";
   if (previous !== frame) communityDemo.modal = "";
+  if (previous !== frame && frame === "m3") communityDemo.selectedCategory = "";
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
   const index = Object.entries(frames).map(([key, title]) =>
     `<div class="frame-list-row"><a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a><a href="#${key}/loading" aria-label="${title} 로딩 미리보기">로딩</a></div>`,
