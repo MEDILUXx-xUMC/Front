@@ -1,5 +1,5 @@
 import { budgetDemo, formatBudget } from "./budget";
-import { button, footer, link, placeholder, rows, screen, tag } from "./ui";
+import { button, footer, icon, link, placeholder, rows, screen, tag } from "./ui";
 
 export const coreFrames = {
   "02": "제품 목록", "03": "한번만 요청", "04": "문고리 수령",
@@ -15,6 +15,19 @@ const product = {
   deposit: 45_000,
   dailyFee: 2_000,
 };
+
+function productNavigation(): string {
+  const items = [
+    ["홈", "02", "m1-imgGroup1"],
+    ["내 거래", "m2", "m1-imgGroup2"],
+    ["채팅", "c1", "m1-imgIcon"],
+    ["내 물건", "t6", "m1-imgGroup3"],
+    ["마이", "m1", "m1-imgGroup4"],
+  ] as const;
+  return `<nav class="tabs" aria-label="주 메뉴">${items.map(([label, route, asset]) =>
+    `<a href="#${route}" ${route === "02" ? 'aria-current="page"' : ""}><span>${icon(asset)}</span>${label}</a>`,
+  ).join("")}</nav>`;
+}
 
 function productList(): string {
   const tabs = ["전체", "전자제품 대여", "미개봉 생활용품"].map((label) =>
@@ -40,7 +53,7 @@ function productList(): string {
     <div class="core-tabs" role="group" aria-label="제품 종류">${tabs}</div>
     <div class="core-list-heading"><h2>이웃이 쓰는 것 ${count}개</h2><small>아직 안 써 본 제품부터 보여 드려요</small></div>
     <div class="core-products">${keyboardVisible ? keyboard : ""}${showSamples ? samples : ""}${count === 0 ? `<div class="panel"><strong>예산 안의 제품이 없어요</strong><small>예산을 바꾸면 더 많은 제품을 볼 수 있어요.</small></div>` : ""}</div>
-  `, { className: "core-screen" });
+  `, { className: "core-screen", footer: productNavigation() });
 }
 
 function requestScreen(): string {

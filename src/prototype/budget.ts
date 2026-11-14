@@ -10,6 +10,7 @@ export const budgetFrames = { "01": "예산 선택" } as const;
 
 export const budgetPresets = [10_000, 30_000, 50_000, 100_000, 500_000] as const;
 export const budgetRangeValues = [...budgetPresets, 1_000_000] as const;
+const budgetPresetLabels = ["1만 원", "3만 원", "5만 원", "10만 원", "50만 원"] as const;
 
 export function formatBudget(amount: number): string {
   return `${amount.toLocaleString("ko-KR")}원`;
@@ -20,9 +21,9 @@ export function budgetScreen(): string {
   const rangeIndex = budgetRangeValues.findIndex((value) => value >= amount);
   const selectedRangeIndex = rangeIndex < 0 ? budgetRangeValues.length - 1 : rangeIndex;
   const progress = selectedRangeIndex / (budgetRangeValues.length - 1) * 100;
-  const presets = budgetPresets.map((preset) =>
+  const presets = budgetPresets.map((preset, index) =>
     `<button type="button" class="budget-chip ${!custom && amount === preset ? "selected" : ""}"
-      data-budget="${preset}" aria-pressed="${!custom && amount === preset}">${formatBudget(preset)}</button>`,
+      data-budget="${preset}" aria-pressed="${!custom && amount === preset}">${budgetPresetLabels[index]}</button>`,
   ).join("");
 
   return screen("한번만", `
