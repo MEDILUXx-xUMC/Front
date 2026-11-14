@@ -82,7 +82,7 @@ export const tradeScreens: Record<TradeFrame, () => string> = {
     <div class="two">${photo("handoff", "걸어 둔 모습", "t4-imgGroup1")}${photo("condition", "제품 상태", "t4-imgGroup1")}</div>
     <ol class="steps">
       <li><span class="step done">${icon("t4-imgGroup2")}</span><div>요청 수락<small>풍무동 이웃 · 2일 사용</small></div></li>
-      <li>${icon("t4-imgIndicator")}<div>문고리에 걸어 두기<small>사진 두 장을 올리면 이웃에게 알림이 가요</small></div></li>
+      <li aria-current="step"><span class="step current">${icon("t4-imgIndicator")}</span><div>문고리에 걸어 두기<small>사진 두 장을 올리면 이웃에게 알림이 가요</small></div></li>
       <li><span class="step"></span><div>이웃이 가져감<small>가져간 사진이 올라오면 알려 드려요</small></div></li>
     </ol>
   `, { frame: "t4", back: "t3", footer: footer(button("걸어 뒀어요", "ready", "primary", !tradeDemo.photos.has("handoff") || !tradeDemo.photos.has("condition"))) }),

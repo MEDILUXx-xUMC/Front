@@ -8,6 +8,12 @@
   </head>
   <body>
     <div id="app"></div>
+    <dialog id="request-loading" aria-labelledby="request-message">
+      <div class="request-spinner" aria-hidden="true"></div>
+      <p id="request-message" role="status"></p>
+    </dialog>
+    <div id="feedback" class="feedback" role="status" aria-atomic="true"></div>
+    <div id="request-error" class="feedback error" role="alert" aria-atomic="true"></div>
     <script type="module" src="/src/prototype/main.ts"></script>
   </body>
 </html>
