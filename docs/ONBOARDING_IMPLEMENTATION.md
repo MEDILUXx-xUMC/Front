@@ -26,7 +26,7 @@
 
 ## 실행
 
-`npm ci`, `npm run dev` 후 `/#o1` 또는 `/#frames`에서 확인한다. 타입 검사와 빌드는 `npm run typecheck`, `npm run build`로 실행한다.
+`npm ci`, `npm run dev` 후 Vite의 기본 주소에서 서비스 소개를 확인한다. 타입 검사와 빌드는 `npm run typecheck`, `npm run build`로 실행한다.
 
 ## 검증 결과
 
