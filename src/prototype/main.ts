@@ -6,7 +6,7 @@ import "./core.css";
 import "./onboarding.css";
 import { budgetDemo, budgetFrames, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
 import { coreDemo, coreFrames, coreScreens, type CoreFrame } from "./core";
-import { onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
+import { bindOnboarding, mountOnboarding, onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
@@ -14,6 +14,7 @@ import { escapeHtml, screen } from "./ui";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 let frame = "";
 let feedbackTimer: ReturnType<typeof setTimeout>;
+let cleanupOnboarding = () => {};
 
 function navigate(target: string): void {
   if (location.hash === `#${target}`) render();
@@ -33,8 +34,9 @@ function hasOnboardingFrame(value: string): value is OnboardingFrame {
 }
 
 function render(): void {
+  cleanupOnboarding();
   const previous = frame;
-  frame = location.hash.slice(1).toLowerCase() || "t1";
+  frame = location.hash.slice(1).toLowerCase() || "o1";
   if (previous !== frame) communityDemo.modal = "";
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
   const index = Object.entries({ ...onboardingFrames, ...budgetFrames, ...coreFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
@@ -45,6 +47,7 @@ function render(): void {
     : frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
     : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
   app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
+  cleanupOnboarding = mountOnboarding(app);
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
   const dialog = app.querySelector<HTMLElement>("[role=dialog]");
@@ -242,4 +245,5 @@ window.addEventListener("hashchange", () => {
   render();
   window.scrollTo(0, 0);
 });
+bindOnboarding(app, render, navigate);
 render();
