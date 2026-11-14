@@ -1,2 +1,2 @@
 # Front
-This front-end repository
+This is front-end repository
