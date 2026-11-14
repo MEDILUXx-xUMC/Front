@@ -1,0 +1,50 @@
+.core-screen .body { gap: 16px; }
+.core-screen .appbar h1 { font-size: 16px; }
+.core-budget-bar { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: var(--panel); border-radius: 12px; font-size: 13px; font-weight: 600; }
+.core-change { width: auto; min-height: 0; padding: 0; color: var(--accent); font-size: 12px; }
+.core-tabs { display: flex; gap: 7px; overflow-x: auto; }
+.core-tab { border: 1px solid var(--line); border-radius: 99px; background: var(--paper); white-space: nowrap; padding: 7px 10px; font-size: 12px; }
+.core-tab.active { background: var(--color-gray-800); color: var(--paper); border-color: var(--color-gray-800); }
+.core-list-heading { display: grid; gap: 4px; }
+.core-list-heading h2 { font-size: 20px; }
+.core-list-heading small { font-size: 12px; }
+.core-products { display: grid; gap: 10px; }
+.core-product { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; border-radius: 13px; padding: 12px; background: var(--panel); text-align: left; }
+.core-product > span, .core-trade-card > div { display: grid; align-content: center; gap: 3px; }
+.core-product strong, .core-trade-card strong { font-size: 14px; }
+.core-product b { color: var(--accent); font-size: 13px; }
+.core-thumb { width: 76px; height: 76px; flex: 0 0 76px; font-size: 12px; }
+.core-hero { height: 150px; border-radius: 14px; }
+.core-product-detail { display: grid; gap: 4px; }
+.core-product-detail h2 { font-size: 21px; }
+.core-quote { padding: 12px; border-radius: 10px; background: var(--panel); font-size: 13px; }
+.core-duration, .core-total { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.core-stepper { display: flex; align-items: center; gap: 13px; }
+.core-stepper button { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.core-price-rows { font-size: 12px; }
+.core-total b { font-size: 12px; }
+.core-progress { height: 3px; background: var(--line); }
+.core-progress span { display: block; height: 100%; background: var(--yellow); }
+.core-trade-card { display: flex; gap: 12px; padding: 12px; border-radius: 13px; background: var(--panel); }
+.core-status-list { display: grid; gap: 15px; list-style: none; padding: 0; margin: 8px 0; }
+.core-status-list li { display: flex; align-items: flex-start; gap: 12px; }
+.core-status-list li > span { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; border: 1px solid var(--line); font-size: 11px; }
+.core-status-list li.done > span { background: var(--soft-green); border: 0; color: var(--green); }
+.core-status-list li.current > span { background: var(--yellow); border: 0; }
+.core-status-list li > div { display: grid; gap: 2px; }
+.core-status-list b { font-size: 13px; }
+.core-status-list small { font-size: 11px; }
+.core-photo-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.core-photo { display: grid; place-items: center; min-height: 100px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); font-size: 17px; }
+.core-photo.done { background: var(--photo); border: 0; color: var(--green); }
+.core-photo span { font-size: 11px; color: var(--muted); }
+.core-complete { display: grid; justify-items: center; gap: 10px; margin: 34px 0 22px; text-align: center; }
+.core-check { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--soft-yellow); color: var(--accent); font-size: 28px; }
+.core-complete h2 { font-size: 20px; }
+.core-complete p { font-size: 13px; color: var(--muted); }
+.core-experience { display: grid; gap: 8px; }
+.core-experience h3 { font-size: 15px; }
+.core-experience > div { display: flex; gap: 6px; }
+.core-experience p { font-size: 12px; color: var(--muted); }
+.core-experience textarea { width: 100%; min-height: 56px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; resize: vertical; }
+.core-home { width: 100%; min-height: 34px; font-size: 13px; color: var(--accent); }

@@ -2,7 +2,9 @@ import "../styles/tokens.css";
 import "./prototype.css";
 import "./community.css";
 import "./budget.css";
-import { budgetDemo, budgetFrames, budgetNextScreen, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
+import "./core.css";
+import { budgetDemo, budgetFrames, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
+import { coreDemo, coreFrames, coreScreens, type CoreFrame } from "./core";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
@@ -20,16 +22,20 @@ function hasTradeFrame(value: string): value is TradeFrame {
   return Object.hasOwn(tradeScreens, value);
 }
 
+function hasCoreFrame(value: string): value is CoreFrame {
+  return Object.hasOwn(coreScreens, value);
+}
+
 function render(): void {
   const previous = frame;
   frame = location.hash.slice(1).toLowerCase() || "t1";
   if (previous !== frame) communityDemo.modal = "";
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
-  const index = Object.entries({ ...budgetFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
+  const index = Object.entries({ ...budgetFrames, ...coreFrames, ...tradeFrames, ...communityFrames }).map(([key, title]) =>
     `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
   ).join("");
   const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
-  const page = frame === "01" ? budgetScreen() : frame === "02" ? budgetNextScreen()
+  const page = frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
     : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
   app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
@@ -50,6 +56,13 @@ function notify(message: string): void {
 }
 
 const actions: Record<string, () => void> = {
+  "core-open-product": () => navigate("03"),
+  "core-days-down": () => { coreDemo.rentalDays = Math.max(1, coreDemo.rentalDays - 1); render(); },
+  "core-days-up": () => { coreDemo.rentalDays = Math.min(7, coreDemo.rentalDays + 1); render(); },
+  "core-request": () => navigate("04"),
+  "core-pickup": () => { coreDemo.received = true; navigate("05"); },
+  "core-return": () => { coreDemo.returned = true; navigate("06"); },
+  "core-review": () => notify("후기를 남겼어요. (프로토타입)"),
   "budget-custom": () => {
     budgetDemo.custom = true;
     render();
@@ -90,6 +103,12 @@ app.addEventListener("click", (event) => {
       budgetDemo.custom = false;
       render();
     }
+    return;
+  }
+  const coreTab = (event.target as HTMLElement).closest<HTMLElement>("[data-core-tab]");
+  if (coreTab?.dataset.coreTab) {
+    coreDemo.tab = coreTab.dataset.coreTab;
+    render();
     return;
   }
   const frameLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href="#t2"]');
