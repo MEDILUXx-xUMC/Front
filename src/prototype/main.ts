@@ -1,13 +1,19 @@
 import "../styles/tokens.css";
 import "./prototype.css";
 import "./community.css";
+import "./loading.css";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
+import { loadingScreen } from "./loading";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 let frame = "";
 let feedbackTimer: ReturnType<typeof setTimeout>;
+let loadingTimer: ReturnType<typeof setTimeout>;
+let routeFeedback = "";
+const frames: Readonly<Record<string, string>> = { ...tradeFrames, ...communityFrames };
+const frameShortcut = '<a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a>';
 
 function navigate(target: string): void {
   if (location.hash === `#${target}`) render();
@@ -20,15 +26,15 @@ function hasTradeFrame(value: string): value is TradeFrame {
 
 function render(): void {
   const previous = frame;
-  frame = location.hash.slice(1).toLowerCase() || "t1";
+  frame = location.hash.slice(1).toLowerCase().split("/")[0] || "t1";
   if (previous !== frame) communityDemo.modal = "";
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
-  const index = Object.entries({ ...tradeFrames, ...communityFrames }).map(([key, title]) =>
-    `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
+  const index = Object.entries(frames).map(([key, title]) =>
+    `<div class="frame-list-row"><a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a><a href="#${key}/loading" aria-label="${title} 로딩 미리보기">로딩</a></div>`,
   ).join("");
   const community = Object.hasOwn(communityScreens, frame) ? communityScreens[frame as CommunityFrame] : undefined;
   const page = hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
-  app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
+  app.innerHTML = `<div class="prototype">${page}</div>${frameShortcut}<div id="feedback" role="status"></div>`;
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
   const dialog = app.querySelector<HTMLElement>("[role=dialog]");
@@ -37,6 +43,22 @@ function render(): void {
     dialog.setAttribute("tabindex", "-1");
     dialog.focus();
   }
+  if (routeFeedback) {
+    notify(routeFeedback);
+    routeFeedback = "";
+  }
+}
+
+function renderRoute(): void {
+  clearTimeout(loadingTimer);
+  const [target = "t1", mode] = (location.hash.slice(1).toLowerCase() || "t1").split("/");
+  const title = Object.hasOwn(frames, target) ? frames[target] : undefined;
+  if (!title || (mode !== "loading" && target === frame)) {
+    render();
+    return;
+  }
+  app.innerHTML = `<div class="prototype">${loadingScreen(target, title)}</div>${frameShortcut}<div id="feedback" role="status"></div>`;
+  if (mode !== "loading") loadingTimer = setTimeout(render, 250);
 }
 
 function notify(message: string): void {
@@ -50,9 +72,9 @@ const actions: Record<string, () => void> = {
   "sale-quote": () => { tradeDemo.saleQuote = true; tradeDemo.requestChecks = [true, true]; navigate("t2"); },
   "send-request": () => {
     tradeDemo.stage = "REQUESTED";
+    routeFeedback = "요청을 보냈어요. (프로토타입)";
     navigate(tradeDemo.saleQuote ? "t1" : "t3");
     tradeDemo.saleQuote = false;
-    setTimeout(() => notify("요청을 보냈어요. (프로토타입)"), 100);
   },
   accept: () => { tradeDemo.stage = "ACCEPTED"; navigate("t4"); },
   reject: () => { tradeDemo.stage = "REJECTED"; notify("요청을 거절했어요."); },
@@ -190,6 +212,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 app.addEventListener("keydown", (event) => {
+  if (app.querySelector(".route-loading")) return;
   if (event.key === "Escape" && communityDemo.modal) {
     communityDemo.modal = "";
     render();
@@ -200,7 +223,7 @@ app.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("hashchange", () => {
-  render();
+  renderRoute();
   window.scrollTo(0, 0);
 });
-render();
+renderRoute();
