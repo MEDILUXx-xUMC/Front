@@ -5,8 +5,11 @@ import "./budget.css";
 import "./core.css";
 import "./onboarding.css";
 import { budgetDemo, budgetFrames, budgetPresets, budgetRangeValues, budgetScreen, formatBudget } from "./budget";
-import { coreDemo, coreFrames, coreLoadingModal, coreScreens, type CoreFrame } from "./core";
-import { onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
+import { coreDemo, coreFrames, coreLoadingModal, coreScreens, setCoreProduct, type CoreFrame } from "./core";
+import { createApiClient } from "../api/client";
+import { createProductsApi } from "../api/products";
+import { mockProductsApi } from "../api/mocks/products";
+import { bindOnboarding, mountOnboarding, onboardingFrames, onboardingScreens, type OnboardingFrame } from "./onboarding";
 import { appendMessage, communityDemo, communityFrames, communityScreens, type CommunityFrame } from "./community";
 import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
 import { escapeHtml, screen } from "./ui";
@@ -14,6 +17,11 @@ import { escapeHtml, screen } from "./ui";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 let frame = "";
 let feedbackTimer: ReturnType<typeof setTimeout>;
+let cleanupOnboarding = () => {};
+const apiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const productsApi = apiBase ? createProductsApi(createApiClient(apiBase)) : mockProductsApi;
+let listRequest = 0;
+let feedback = { message: "", tone: "info" as "info" | "error" };
 
 function navigate(target: string): void {
   if (location.hash === `#${target}`) render();
@@ -33,8 +41,9 @@ function hasOnboardingFrame(value: string): value is OnboardingFrame {
 }
 
 function render(): void {
+  cleanupOnboarding();
   const previous = frame;
-  frame = location.hash.slice(1).toLowerCase() || "t1";
+  frame = location.hash.slice(1).toLowerCase() || "o1";
   if (previous !== frame) communityDemo.modal = "";
   if (previous !== frame && frame !== "06") coreDemo.reviewOpen = false;
   const draft = app.querySelector<HTMLInputElement>('#chat-form [name="message"]')?.value;
@@ -46,6 +55,13 @@ function render(): void {
     : frame === "01" ? budgetScreen() : hasCoreFrame(frame) ? coreScreens[frame]()
     : hasTradeFrame(frame) ? tradeScreens[frame]() : community?.() ?? screen("화면 목록", `<div class="frame-list">${index}</div>`);
   app.innerHTML = `<div class="prototype">${page}${coreDemo.pending ? coreLoadingModal() : ""}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
+  cleanupOnboarding = mountOnboarding(app);
+  if (feedback.message) {
+    const status = app.querySelector<HTMLElement>("#feedback")!;
+    status.textContent = feedback.message;
+    status.dataset.tone = feedback.tone;
+    status.setAttribute("role", feedback.tone === "error" ? "alert" : "status");
+  }
   const chatInput = app.querySelector<HTMLInputElement>('#chat-form [name="message"]');
   if (chatInput && previous === frame && draft !== undefined) chatInput.value = draft;
   const dialog = app.querySelector<HTMLElement>("[role=dialog]");
@@ -59,12 +75,13 @@ function render(): void {
 }
 
 function notify(message: string, tone: "info" | "error" = "info"): void {
+  feedback = { message, tone };
   const status = document.querySelector<HTMLElement>("#feedback")!;
   status.textContent = message;
   status.dataset.tone = tone;
   status.setAttribute("role", tone === "error" ? "alert" : "status");
   clearTimeout(feedbackTimer);
-  feedbackTimer = setTimeout(() => { status.textContent = ""; }, 3500);
+  feedbackTimer = setTimeout(() => { feedback.message = ""; document.querySelector<HTMLElement>("#feedback")!.textContent = ""; }, 3500);
 }
 
 function runMockRequest(message: string, next: string, after: () => void = () => {}): void {
@@ -80,17 +97,48 @@ function runMockRequest(message: string, next: string, after: () => void = () =>
   }, 700);
 }
 
-function loadCoreProducts(): void {
+async function loadCoreProducts(): Promise<void> {
+  const request = ++listRequest;
   coreDemo.listLoading = true;
+  coreDemo.listError = "";
   navigate("02");
-  window.setTimeout(() => {
+  try {
+    const page = await productsApi.list({ budgetAmount: budgetDemo.amount, rentalDays: coreDemo.rentalDays });
+    if (request !== listRequest) return;
+    coreDemo.products = page.items;
+  } catch (error) {
+    if (request !== listRequest) return;
+    coreDemo.products = [];
+    coreDemo.listError = error instanceof Error ? error.message : "다시 시도해 주세요.";
+    notify(coreDemo.listError, "error");
+  } finally {
+    if (request !== listRequest) return;
+    await new Promise(resolve => setTimeout(resolve, 350));
     coreDemo.listLoading = false;
     if (frame === "02") render();
-  }, 700);
+  }
+}
+
+async function openCoreProduct(productId: string): Promise<void> {
+  if (coreDemo.pending) return;
+  coreDemo.pending = "제품 정보를 불러오는 중이에요";
+  render();
+  try {
+    const detail = await productsApi.get(productId);
+    coreDemo.selectedId = productId;
+    setCoreProduct(detail);
+    navigate("03");
+  } catch (error) {
+    notify(error instanceof Error ? error.message : "제품을 불러오지 못했어요.", "error");
+  } finally {
+    coreDemo.pending = "";
+    render();
+  }
 }
 
 const actions: Record<string, () => void> = {
-  "core-open-product": () => navigate("03"),
+  "core-open-product": () => { void openCoreProduct(coreDemo.selectedId); },
+  "core-retry-list": () => { void loadCoreProducts(); },
   "core-days-down": () => { coreDemo.rentalDays = Math.max(1, coreDemo.rentalDays - 1); render(); },
   "core-days-up": () => { coreDemo.rentalDays = Math.min(7, coreDemo.rentalDays + 1); render(); },
   "core-request": () => runMockRequest("한번만 요청을 보내는 중이에요", "04"),
@@ -122,7 +170,7 @@ const actions: Record<string, () => void> = {
       notify("예산을 1만 원부터 100만 원까지 입력해 주세요.", "error");
       return;
     }
-    loadCoreProducts();
+    void loadCoreProducts();
   },
   "sale-quote": () => { tradeDemo.saleQuote = true; tradeDemo.requestChecks = [true, true]; navigate("t2"); },
   "send-request": () => {
@@ -142,20 +190,8 @@ const actions: Record<string, () => void> = {
 };
 
 app.addEventListener("click", (event) => {
-  const route = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
-  const target = route?.getAttribute("href")?.slice(1);
-  const mockTransitions: Record<string, string> = {
-    "o4:o5": "로그인을 확인하는 중이에요",
-    "o6:o7": "동네를 설정하는 중이에요",
-    "o7:o8": "동네 인증을 확인하는 중이에요",
-    "o8-5:o9": "결제수단 등록을 확인하는 중이에요",
-  };
-  const mockMessage = target ? mockTransitions[`${frame}:${target}`] : undefined;
-  if (route && target && mockMessage) {
-    event.preventDefault();
-    runMockRequest(mockMessage, target);
-    return;
-  }
+  const productCard = (event.target as HTMLElement).closest<HTMLElement>("[data-product-id]");
+  if (productCard?.dataset.productId) { void openCoreProduct(productCard.dataset.productId); return; }
   const element = (event.target as HTMLElement).closest<HTMLElement>("[data-action]");
   if (element?.dataset.action && (element.dataset.action !== "core-review-close" || element === event.target)) actions[element.dataset.action]?.();
   const budgetPreset = (event.target as HTMLElement).closest<HTMLElement>("[data-budget]");
@@ -318,6 +354,9 @@ app.addEventListener("keydown", (event) => {
 
 window.addEventListener("hashchange", () => {
   render();
+  if (frame === "02" && !coreDemo.listLoading && !coreDemo.listError && coreDemo.products.length === 0) void loadCoreProducts();
   window.scrollTo(0, 0);
 });
+bindOnboarding(app, render, navigate);
 render();
+if (location.hash.toLowerCase() === "#02") void loadCoreProducts();

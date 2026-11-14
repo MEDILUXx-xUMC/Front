@@ -2,7 +2,7 @@
 
 **한번만**은 자취생이 익숙한 선택에서 벗어나, 가까운 이웃의 물건을 사기 전에 한 번 써 볼 수 있도록 돕는 서비스 프로토타입입니다. 예산 안에서 물건을 고르고, 문고리로 주고받고, 사용 후기를 남기는 흐름을 시연합니다.
 
-이 저장소는 **Vite + TypeScript 웹 프로토타입**입니다. 화면과 거래 데이터는 Mock이며 실제 로그인·결제·API 호출·배포는 하지 않습니다.
+이 저장소는 **Vite + TypeScript 웹 프로토타입**입니다. 기본 실행은 Mock 데이터로 동작합니다. 백엔드 주소를 설정하면 상품 목록·상세 조회에 실제 API를 사용합니다. 로그인·결제·거래 변경·사진 업로드는 Mock이며 배포는 하지 않습니다.
 
 ## 시작하기
 
@@ -19,6 +19,12 @@ Vite가 출력한 로컬 주소를 엽니다. 기본 포트는 `5173`이며, 모
 npm run typecheck  # TypeScript 검사
 npm run build      # 타입 검사 + 프로토타입 빌드
 ```
+
+### 로컬 백엔드 연결
+
+백엔드의 `feat/catalog-foundation`(PR #2)을 로컬 프로필로 실행한 뒤 `.env.example`을 `.env.local`로 복사하고 `npm run dev`를 재시작합니다. `VITE_API_BASE_URL=http://127.0.0.1:8080/api/v1`이 설정되면 01 예산 선택에서 `GET /products?budgetAmount=...&rentalDays=...`, 02 제품 선택에서 `GET /products/{productId}`를 호출합니다. 응답 대기에는 스켈레톤과 로딩 모달을 표시하고, 빈 결과와 오류는 화면에 표시합니다. 서버 오류 시 Mock으로 자동 전환하지 않습니다. 환경변수가 없으면 Figma 예시 제품 5개를 담은 Mock API를 사용합니다.
+
+백엔드의 그 외 경로는 아직 구현되지 않았으므로 O·T·M·C 화면과 03 이후 거래 전환은 Mock 상태입니다. 실제 연동 범위와 계약은 백엔드 [상품 API PR](https://github.com/MEDILUXx-xUMC/Back/pull/2) 및 `docs/API_CONTRACT.md`를 확인하세요.
 
 ## 화면과 시연 순서
 
@@ -37,7 +43,8 @@ npm run build      # 타입 검사 + 프로토타입 빌드
 
 | 경로 | 내용 |
 | --- | --- |
-| `src/prototype/main.ts` | 해시 라우팅, 화면 전환, Mock 상호작용 |
+| `src/prototype/main.ts` | 해시 라우팅, 화면 전환, 상품 API 호출, Mock 상호작용 |
+| `src/api/products.ts`, `src/api/mocks/products.ts` | 상품 API 계약 및 같은 형식의 Mock |
 | `src/prototype/onboarding.ts`, `onboarding.css` | 온보딩 O1–O10 |
 | `src/prototype/budget.ts`, `budget.css` | 예산 선택 01 |
 | `src/prototype/core.ts`, `core.css` | 제품·수령·반납 02–06 |

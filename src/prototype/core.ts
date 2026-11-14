@@ -1,5 +1,6 @@
 import { budgetDemo, formatBudget } from "./budget";
 import { button, escapeHtml, footer, icon, link, placeholder, rows, screen, tag } from "./ui";
+import type { Product, ProductDetail } from "../types/product";
 
 export const coreFrames = {
   "02": "제품 목록", "03": "한번만 요청", "04": "문고리 수령",
@@ -10,6 +11,7 @@ export type CoreFrame = keyof typeof coreFrames;
 export const coreDemo = {
   tab: "전체", rentalDays: 2, received: false, returned: false,
   listLoading: false, pending: "", reviewOpen: false, reviewText: "", reviewSubmitted: false,
+  products: [] as Product[], listError: "", selectedId: "product-keyboard", detail: null as ProductDetail | null,
   photos: new Map<"pickup" | "return" | "returnExtra", string>(),
 };
 
@@ -40,6 +42,15 @@ const product = {
   dailyFee: 2_000,
 };
 
+export function setCoreProduct(detail: ProductDetail): void {
+  coreDemo.detail = detail;
+  if (detail.track !== "RENTAL") return;
+  product.title = detail.title;
+  product.distance = `${(detail.distanceMeters / 1000).toFixed(1)}km · ${detail.neighborhoodName}`;
+  product.deposit = detail.depositAmount;
+  product.dailyFee = detail.dailyFeeAmount;
+}
+
 function productNavigation(): string {
   const items = [
     ["홈", "02", "m1-imgGroup1"],
@@ -57,39 +68,32 @@ function productList(): string {
   const tabs = ["전체", "전자제품 대여", "미개봉 생활용품"].map((label) =>
     `<button class="core-tab ${coreDemo.tab === label ? "active" : ""}" type="button" data-core-tab="${label}" aria-pressed="${coreDemo.tab === label}">${label}</button>`,
   ).join("");
-  const keyboard = `<button class="core-product" type="button" data-action="core-open-product">
-    ${placeholder("사진", "core-thumb")}
-    <span>${tag("대여", "brand")}<strong>${product.title}</strong><small>사용료 · ${product.distance}</small><b>보증금 ${formatBudget(product.deposit)} · 하루 ${formatBudget(product.dailyFee)}</b></span>
-  </button>`;
-  const samples = [
-    ["섬유유연제 코튼 향 1회분", "1,500원"],
-    ["허브 샴푸 여행용 1회분", "1,200원"],
-    ["세탁세제 1회분", "1,000원"],
-    ["핸드워시 1회분", "1,200원"],
-  ].map(([title, price]) => `<div class="core-product core-sample">
-    ${placeholder("사진", "core-thumb")}
-    <span>${tag("미개봉", "neutral")}<strong>${title}</strong><small>이웃이 쓰는 생활용품</small><b>${price}</b></span>
-  </div>`).join("");
-  const showRental = coreDemo.tab !== "미개봉 생활용품";
-  const showSamples = coreDemo.tab !== "전자제품 대여";
-  const keyboardVisible = showRental && product.deposit + product.dailyFee * coreDemo.rentalDays <= budgetDemo.amount;
-  const count = Number(keyboardVisible) + (showSamples ? 4 : 0);
+  const visible = coreDemo.products.filter(item => coreDemo.tab === "전체" ||
+    (coreDemo.tab === "전자제품 대여" ? item.track === "RENTAL" : item.track === "SEALED_SALE"));
+  const cards = visible.map(item => `<button class="core-product" type="button" data-product-id="${escapeHtml(item.productId)}">
+    ${item.thumbnailUrl ? `<img class="core-thumb" src="${escapeHtml(item.thumbnailUrl)}" alt="${escapeHtml(item.title)}">` : placeholder("사진", "core-thumb")}
+    <span>${tag(item.track === "RENTAL" ? "대여" : "미개봉", item.track === "RENTAL" ? "brand" : "neutral")}
+    <strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.neighborhoodName)} · ${(item.distanceMeters / 1000).toFixed(1)}km</small>
+    <b>${item.track === "RENTAL" ? `보증금 ${formatBudget(item.depositAmount)} · 하루 ${formatBudget(item.dailyFeeAmount)}` : formatBudget(item.salePriceAmount)}</b></span>
+  </button>`).join("");
+  const count = visible.length;
   return screen("김포시 사우동", `
     ${coreDemo.listLoading ? productSkeleton() : `
     <div class="core-budget-bar"><span>예산 ${formatBudget(budgetDemo.amount)} 안에서 보는 중</span>${link("변경", "01", "core-change")}</div>
     <div class="core-tabs" role="group" aria-label="제품 종류">${tabs}</div>
     <div class="core-list-heading"><h2>이웃이 쓰는 것 ${count}개</h2><small>아직 안 써 본 제품부터 보여 드려요</small></div>
-    <div class="core-products">${keyboardVisible ? keyboard : ""}${showSamples ? samples : ""}${count === 0 ? `<div class="panel"><strong>예산 안의 제품이 없어요</strong><small>예산을 바꾸면 더 많은 제품을 볼 수 있어요.</small></div>` : ""}</div>`}
+    <div class="core-products">${coreDemo.listError ? `<div class="panel"><strong>제품을 불러오지 못했어요</strong><small>${escapeHtml(coreDemo.listError)}</small>${button("다시 시도", "core-retry-list")}</div>` : cards || `<div class="panel"><strong>예산 안의 제품이 없어요</strong><small>예산을 바꾸면 더 많은 제품을 볼 수 있어요.</small></div>`}</div>`}
   `, { className: "core-screen", footer: productNavigation() });
 }
 
 function requestScreen(): string {
+  if (coreDemo.detail?.track === "SEALED_SALE") return screen("제품 상세", `<div class="core-product-detail">${tag("미개봉", "neutral")}<h2>${escapeHtml(coreDemo.detail.title)}</h2><p>${escapeHtml(coreDemo.detail.description)}</p><b>${formatBudget(coreDemo.detail.salePriceAmount)}</b></div>`, { back: "02", className: "core-screen", footer: footer(link("판매 요청 화면 보기", "t1")) });
   const usageFee = product.dailyFee * coreDemo.rentalDays;
   const total = product.deposit + usageFee;
   return screen("한번만 요청", `
     ${placeholder("제품 사진", "core-hero")}
     <div class="core-product-detail">${tag("대여", "brand")}<h2>${product.title}</h2><small>사용료 · ${product.distance}</small></div>
-    <div class="core-quote">“타건 소리가 조용한 편이에요. 밤에 써도 좋을 것 같아요.”</div>
+    <div class="core-quote">“${escapeHtml(coreDemo.detail?.description ?? "타건 소리가 조용한 편이에요. 밤에 써도 좋을 것 같아요.")}”</div>
     <div class="core-duration"><span>사용 기간</span><div class="core-stepper">
       <button type="button" data-action="core-days-down" aria-label="사용 기간 하루 줄이기">−</button>
       <strong>${coreDemo.rentalDays}일</strong>
