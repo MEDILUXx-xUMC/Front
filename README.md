@@ -1,26 +1,60 @@
-# Front
-This is front-end repository
+# 한번만 — MEDILUX × 잇타 × UMC 하프 해커톤
 
-## Figma 프로토타입
+**한번만**은 자취생이 익숙한 선택에서 벗어나, 가까운 이웃의 물건을 사기 전에 한 번 써 볼 수 있도록 돕는 서비스 프로토타입입니다. 예산 안에서 물건을 고르고, 문고리로 주고받고, 사용 후기를 남기는 흐름을 시연합니다.
+
+이 저장소는 **Vite + TypeScript 웹 프로토타입**입니다. 기본 실행은 Mock 데이터로 동작합니다. 백엔드 주소를 설정하면 상품 목록·상세 조회에 실제 API를 사용합니다. 로그인·결제·거래 변경·사진 업로드는 Mock이며 배포는 하지 않습니다.
+
+## 시작하기
+
+Node.js와 npm이 설치된 환경에서 실행합니다.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Vite가 표시한 주소에서 기본 화면을 열거나 `/#frames`에서 Figma 프레임을 선택한다. 거래 T1–T9에서 요청 확인, 수락, 사진 선택, 반납 확인, 물건 등록과 품목 안내를 확인할 수 있다. 결제와 거래 동작은 프로토타입 상태에서만 처리된다. 사진 미리보기와 입력값은 탭을 새로고침하면 초기화된다.
+Vite가 출력한 로컬 주소를 엽니다. 기본 포트는 `5173`이며, 모든 화면은 `http://127.0.0.1:5173/#frames`에서 선택할 수 있습니다. 이미 5173 포트를 사용 중이면 터미널에 출력된 주소를 사용하세요.
 
-마이 M1–M3에는 프로필, 내 거래 필터, 처음 써 본 종류가 있다. 채팅 C1–C2에는 거래별 채팅 필터, 읽음 상태, 메시지·사진 전송과 반납 일정 예시가 있다. M2의 **빌려준 것**에서 거래 화면에서 처리한 상태를 확인할 수 있다. 홈 탭은 프로토타입 화면 목록을 연다.
+```sh
+npm run typecheck  # TypeScript 검사
+npm run build      # 타입 검사 + 프로토타입 빌드
+```
 
-화면 이동 시 로딩 예시가 잠깐 표시된다. 화면 목록에서 각 행의 **로딩**을 누르거나 `/#t4/loading`처럼 접속하면 해당 상태를 고정해서 검토할 수 있다.
+### 로컬 백엔드 연결
 
-거래·등록·채팅의 Mock 요청 중에는 로딩 모달이 열린다. 실패 토스트를 검토하려면 주소에 `?api=error`를 해시 앞에 넣는다. 예를 들어 `/?api=error#c2`에서 메시지를 보내면 실패를 재현할 수 있다. 정상 동작을 확인하려면 쿼리를 제거한다.
+백엔드의 `feat/catalog-foundation`(PR #2)을 로컬 프로필로 실행한 뒤 `.env.example`을 `.env.local`로 복사하고 `npm run dev`를 재시작합니다. `VITE_API_BASE_URL=http://127.0.0.1:8080/api/v1`이 설정되면 01 예산 선택에서 `GET /products?budgetAmount=...&rentalDays=...`, 02 제품 선택에서 `GET /products/{productId}`를 호출합니다. 응답 대기에는 스켈레톤과 로딩 모달을 표시하고, 빈 결과와 오류는 화면에 표시합니다. 서버 오류 시 Mock으로 자동 전환하지 않습니다. 환경변수가 없으면 Figma 예시 제품 5개를 담은 Mock API를 사용합니다.
 
-`npm run build`로 타입 검사와 배포용 빌드를 실행한다.
+백엔드의 그 외 경로는 아직 구현되지 않았으므로 O·T·M·C 화면과 03 이후 거래 전환은 Mock 상태입니다. 실제 연동 범위와 계약은 백엔드 [상품 API PR](https://github.com/MEDILUXx-xUMC/Back/pull/2) 및 `docs/API_CONTRACT.md`를 확인하세요.
 
-## 프로젝트 초기 구조
+## 화면과 시연 순서
 
-[폴더 구조와 작업 순서](docs/PROJECT_SETUP.md)에 공통 코드 사용법과 Figma 기준을 정리했다. FE와 BE가 함께 보는 API 계약은 Back 저장소의 `docs/API_CONTRACT.md`에서 관리한다.
+| 범위 | 주요 화면 | 진입 경로 |
+| --- | --- | --- |
+| 온보딩 | 서비스 소개, 로그인, 약관, 동네 설정·인증, 카드 등록 안내, 권한 안내 | `/#o1` |
+| 빌리는 사람 | 예산 선택, 제품 목록, 요청, 문고리 수령, 반납, 반납 확인·후기 | `/#01` |
+| 빌려주는 사람·거래 | 제품 상세, 요청 확인, 수락, 걸어 두기, 반납 확인, 물건 등록 | `/#t1` |
+| 마이·채팅 | 내 거래, 처음 써 본 것, 채팅 목록·대화 | `/#m1`, `/#c1` |
+
+권장 시연: `O1 → O10 → 01 → 02 → 03 → 04 → 05 → 06`. `01`에서 예산을 선택하면 `02`의 로딩 스켈레톤이 잠시 보입니다. 요청·인증·반납은 Mock 로딩 모달을 거쳐 다음 화면으로 이동합니다. `04`에서 가져간 사진, `05`에서 반납 사진을 선택해야 다음 단계로 진행할 수 있습니다. `06`의 **후기 남기기**를 누르면 작성 창이 열립니다.
+
+T·M·C 화면은 이동할 때 programingA의 화면별 로딩 스켈레톤을 표시합니다. 화면 목록의 **로딩** 링크 또는 `/#t4/loading`에서 고정된 로딩 상태를 볼 수 있습니다. 거래·등록·채팅의 Mock 요청은 공통 로딩 모달과 오류 토스트를 사용합니다. `/?api=error#c2`처럼 해시 앞에 `?api=error`를 넣으면 실패를 재현할 수 있습니다. 정상 시연으로 돌아갈 때는 쿼리를 제거합니다.
+
+사진은 브라우저에서 미리보기만 만들며 새로고침하면 사라집니다. 카드 번호와 로그인은 시연용 표시이고 입력한 정보를 서버에 전송하지 않습니다. 오류 상황은 토스트로 안내합니다.
+
+## 코드 위치
+
+| 경로 | 내용 |
+| --- | --- |
+| `src/prototype/main.ts` | 해시 라우팅, 화면 전환, 상품 API 호출, Mock 상호작용 |
+| `src/prototype/loading.ts`, `request-feedback.ts` | programingA 기준 화면별 스켈레톤·공통 요청 로딩·토스트 |
+| `src/api/products.ts`, `src/api/mocks/products.ts` | 상품 API 계약 및 같은 형식의 Mock |
+| `src/prototype/onboarding.ts`, `onboarding.css` | 온보딩 O1–O10 |
+| `src/prototype/budget.ts`, `budget.css` | 예산 선택 01 |
+| `src/prototype/core.ts`, `core.css` | 제품·수령·반납 02–06 |
+| `src/prototype/trades.ts`, `community.ts` | 거래 T1–T9, 마이 M1–M3, 채팅 C1–C2 |
+| `src/styles/tokens.css`, `public/figma/` | 디자인 토큰과 Figma 아이콘 |
+
+[Figma 시안](https://www.figma.com/design/VlY2DYbl9vd53axgyePbqR/한번만?node-id=0-1)과 [초기 구조 안내](docs/PROJECT_SETUP.md)를 함께 참고하세요. 현재 작업은 선행 PR [#2](https://github.com/MEDILUXx-xUMC/Front/pull/2) → [#3](https://github.com/MEDILUXx-xUMC/Front/pull/3) → [#4](https://github.com/MEDILUXx-xUMC/Front/pull/4) 순서로 연결돼 있습니다.
 
 ## FE 협업 규칙
 

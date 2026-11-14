@@ -1,0 +1,47 @@
+.budget-screen .body { padding: 24px 16px 20px; gap: 0; }
+.budget-heading { display: grid; gap: 7px; }
+.budget-heading h2 { font-size: 24px; line-height: 1.35; letter-spacing: -.045em; }
+.budget-heading p { color: var(--muted); font-size: 14px; line-height: 1.45; }
+.budget-choice { display: grid; margin-top: 34px; }
+.budget-label { font-size: 13px; font-weight: 700; }
+.budget-choice > strong { margin-top: 4px; font-size: 31px; line-height: 1.2; letter-spacing: -.04em; }
+.budget-caption { color: var(--muted); font-size: 12px; margin-top: 5px; }
+.budget-choice input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  margin: 25px 0 0;
+  border-radius: 99px;
+  background: linear-gradient(to right, var(--yellow) var(--budget-progress), var(--line) var(--budget-progress));
+  cursor: pointer;
+}
+.budget-choice input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 3px solid var(--paper);
+  box-shadow: 0 1px 4px #2c1b0033;
+}
+.budget-choice input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 3px solid var(--paper);
+  box-shadow: 0 1px 4px #2c1b0033;
+}
+.budget-range-labels { display: flex; justify-content: space-between; margin-top: 11px; color: var(--muted); font-size: 12px; }
+.budget-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.budget-chip { border: 0; border-radius: 99px; padding: 7px 13px; background: var(--panel); font-size: 13px; line-height: 1.35; }
+.budget-chip.selected { background: var(--color-gray-800); color: var(--paper); }
+.budget-chip:focus-visible, .budget-choice input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.budget-custom-label { font-size: 13px; font-weight: 700; margin-top: 20px; }
+.budget-choice input[type="number"] { width: 100%; min-height: 44px; margin-top: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.budget-choice small { margin-top: 5px; }
+.budget-notice { display: flex; align-items: flex-start; gap: 8px; margin-top: 26px; padding: 12px; border-radius: 10px; background: var(--panel); color: var(--muted); font-size: 12px; line-height: 1.5; }
+.budget-notice p { margin: 0; }
+.budget-info { display: grid; place-items: center; flex: 0 0 15px; width: 15px; height: 15px; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; font-weight: 700; }
+.budget-next { display: grid; gap: 8px; margin-top: 26px; }
+.budget-next p { color: var(--muted); }
