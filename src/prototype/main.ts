@@ -1,0 +1,116 @@
+import "../styles/tokens.css";
+import "./prototype.css";
+import { tradeDemo, tradeFrames, tradeScreens, type TradeFrame } from "./trades";
+import { escapeHtml, screen } from "./ui";
+
+const app = document.querySelector<HTMLDivElement>("#app")!;
+let frame = "";
+let feedbackTimer: ReturnType<typeof setTimeout>;
+
+function navigate(target: string): void {
+  if (location.hash === `#${target}`) render();
+  else location.hash = target;
+}
+
+function hasTradeFrame(value: string): value is TradeFrame {
+  return Object.hasOwn(tradeScreens, value);
+}
+
+function render(): void {
+  frame = location.hash.slice(1).toLowerCase() || "t1";
+  const index = Object.entries(tradeFrames).map(([key, title]) =>
+    `<a href="#${key}"><b>${key.toUpperCase()}</b><span>${title}</span></a>`,
+  ).join("");
+  const page = hasTradeFrame(frame) ? tradeScreens[frame]() : screen("화면 목록", `<div class="frame-list">${index}</div>`);
+  app.innerHTML = `<div class="prototype">${page}</div><a class="frame-shortcut" href="#frames" aria-label="프로토타입 화면 목록">화면 목록</a><div id="feedback" role="status"></div>`;
+  if (frame === "t2" || frame === "t8") {
+    const dialog = app.querySelector<HTMLElement>("[role=dialog]");
+    app.querySelectorAll<HTMLElement>(".appbar, .body > :not(.scrim), .frame-shortcut").forEach((element) => { element.inert = true; });
+    dialog?.setAttribute("tabindex", "-1");
+    dialog?.focus();
+  }
+}
+
+function notify(message: string): void {
+  const status = document.querySelector<HTMLElement>("#feedback")!;
+  status.textContent = message;
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => { status.textContent = ""; }, 3500);
+}
+
+const actions: Record<string, () => void> = {
+  "sale-quote": () => { tradeDemo.saleQuote = true; tradeDemo.requestChecks = [true, true]; navigate("t2"); },
+  "send-request": () => {
+    tradeDemo.stage = "REQUESTED";
+    navigate(tradeDemo.saleQuote ? "t1" : "t3");
+    tradeDemo.saleQuote = false;
+    setTimeout(() => notify("요청을 보냈어요. (프로토타입)"), 100);
+  },
+  accept: () => { tradeDemo.stage = "ACCEPTED"; navigate("t4"); },
+  reject: () => { tradeDemo.stage = "REJECTED"; notify("요청을 거절했어요."); },
+  ready: () => { tradeDemo.stage = "READY_FOR_PICKUP"; notify("걸어 둔 사진을 등록했어요."); },
+  complete: () => { tradeDemo.stage = "COMPLETED"; notify("반납 확인을 완료했어요."); },
+  dispute: () => { tradeDemo.stage = "DISPUTED"; notify("파손·분실 신고를 표시했어요. (프로토타입)"); },
+  "policy-from-form": () => { tradeDemo.policyBack = "t7"; navigate("t9"); },
+  "policy-from-block": () => { tradeDemo.policyBack = "t8"; navigate("t9"); },
+  "sealed-category": () => { tradeDemo.forms.t7.category = "샴푸"; navigate("t7"); },
+};
+
+app.addEventListener("click", (event) => {
+  const element = (event.target as HTMLElement).closest<HTMLElement>("[data-action]");
+  if (element?.dataset.action) actions[element.dataset.action]?.();
+  const frameLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href="#t2"]');
+  if (frameLink) tradeDemo.saleQuote = false;
+});
+
+app.addEventListener("input", (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement)) return;
+  const form = input.form?.dataset.form;
+  if (form !== "t6" && form !== "t7") return;
+  const fields = tradeDemo.forms[form] as Record<string, string>;
+  if (Object.hasOwn(fields, input.name)) fields[input.name] = input.value;
+});
+
+app.addEventListener("change", (event) => {
+  const input = event.target;
+  if (input instanceof HTMLSelectElement && input.value === "샴푸 (덜어서 팔기)") {
+    navigate("t8");
+    return;
+  }
+  if (!(input instanceof HTMLInputElement)) return;
+  if (input.dataset.check !== undefined) {
+    const values = frame === "t2" ? tradeDemo.requestChecks : tradeDemo.itemChecks;
+    values[Number(input.dataset.check)] = input.checked;
+    const submit = app.querySelector<HTMLButtonElement>(frame === "t2" ? '[data-action="send-request"]' : '[form="listing"]');
+    if (submit) submit.disabled = !values.every(Boolean);
+  }
+  const file = input.files?.[0];
+  if (input.dataset.photo && file) {
+    if (!file.type.startsWith("image/")) { notify("이미지 파일을 선택해 주세요."); return; }
+    const previous = tradeDemo.photos.get(input.dataset.photo);
+    if (previous) URL.revokeObjectURL(previous);
+    tradeDemo.photos.set(input.dataset.photo, URL.createObjectURL(file));
+    render();
+  }
+});
+
+app.addEventListener("submit", (event) => {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement) || form.id !== "listing") return;
+  event.preventDefault();
+  if (frame === "t7" && !tradeDemo.itemChecks.every(Boolean)) return;
+  const title = new FormData(form).get("title");
+  notify(`${typeof title === "string" && title.trim() ? title.trim() : "제품"} 등록을 확인했어요. (프로토타입)`);
+});
+
+app.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && frame === "t2") navigate(tradeDemo.saleQuote ? "t1" : "frames");
+  if (event.key === "Escape" && frame === "t8") navigate("t7");
+});
+
+window.addEventListener("hashchange", () => {
+  render();
+  window.scrollTo(0, 0);
+});
+render();
