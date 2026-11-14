@@ -75,6 +75,12 @@ app.addEventListener("click", (event) => {
   switch (control.dataset.community) {
     case "trade-filter": communityDemo.tradeFilter = value; break;
     case "chat-filter": communityDemo.chatFilter = value; break;
+    case "experience":
+      communityDemo.selectedCategory = communityDemo.selectedCategory === value ? "" : value;
+      app.querySelectorAll<HTMLButtonElement>('[data-community="experience"]').forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.value === communityDemo.selectedCategory));
+      });
+      return;
     case "room":
       communityDemo.roomIndex = Number(value);
       communityDemo.read.add(communityDemo.roomIndex);
